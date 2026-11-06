@@ -1,69 +1,190 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { calcDailyQuota, calcRemainingDays, calcRequiredTotal } from "@/lib/quota";
+
+const rewards = [
+{ name: "報酬A", costPoints: 100 },
+{ name: "報酬B", costPoints: 250 },
+{ name: "報酬C", costPoints: 500 },
+];
+
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+const [days, setDays] = useState([
+  { date: "2026-11-06", playable: true },
+  { date: "2026-11-07", playable: true },
+  { date: "2026-11-08", playable: true },
+  { date: "2026-11-09", playable: true },
+]);
+
+const [currentPoints, setCurrentPoints] = useState(0);
+const [counts, setCounts] = useState([0, 0, 0]);
+const [includeToday, setIncludeToday] = useState(true);
+
+const requiredTotal = calcRequiredTotal(rewards.map((r, i) => ({ ...r, count: counts[i] })));
+const remainingDays = calcRemainingDays(days, true);
+const dailyQuota = calcDailyQuota(requiredTotal, currentPoints, remainingDays);
+
+//ポイントぴったりにするためのロジック
+const rest = Math.max(requiredTotal - currentPoints, 0);
+const schedule: { date: string; playable: boolean; target: number; cumulative: number }[] = [];
+let earned = 0;
+const activeDays = days.filter((day) => day.playable);
+
+days.forEach((day, i) => {
+  const isActive = day.playable && (includeToday || i > 0);
+  const isLast = activeDays[activeDays.length - 1]?.date === day.date;
+  const target = isActive ? (isLast ? rest - earned : dailyQuota) : 0;
+  earned += target;
+  schedule.push({ ...day, target, cumulative: currentPoints + earned });
+});
+
+//共有テキスト
+const lastSchedule = schedule.findLast((day) => day.target > 0);
+const lastDayText = dailyQuota > 0 && lastSchedule?.target !== dailyQuota
+  ? `／最終日：${lastSchedule?.target}pt`
+  : "";
+
+const shareText = dailyQuota === 0
+  ? "報酬交換の目標を達成済みです！"
+  : `1日の目安：${dailyQuota}pt／残り${rest}pt（${remainingDays}日）${lastDayText}`;
+
+//共有リンク
+const params = new URLSearchParams({
+  current: String(currentPoints),
+  counts: counts.join(","),
+  days: days.map((day) => day.playable ? "1" : "0").join(""),
+});
+const shareUrl = `https://toupazu-point-calc.vercel.app/?${params}`;
+const fullShareText = `${shareText}\n${shareUrl}`;
+
+return (
+<main className="mx-auto max-w-2xl p-6 space-y-6">
+  <h1 className="text-2xl font-bold">イベントノルマ計算</h1>
+
+  <label className="block">
+    現在のポイント
+    <input
+      type="number"
+      min="0"
+      value={currentPoints}
+      onChange={(e) => setCurrentPoints(Math.max(0, Number(e.target.value)))}
+      className="mt-1 w-full rounded border p-2"
+    />
+  </label>
+
+  <section>
+    <h2 className="font-bold">報酬の希望数</h2>
+    {rewards.map((reward, i) => (
+      <label key={reward.name} className="block">
+        {reward.name}（{reward.costPoints}pt）
+        <input
+          type="number"
+          min="0"
+          value={counts[i]}
+          onChange={(e) => {
+            const next = [...counts];
+            next[i] = Number(e.target.value);
+            setCounts(next);
+          }}
+          className="mt-1 w-full rounded border p-2"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </label>
+    ))}
+  </section>
+
+  <section>
+  <h2 className="font-bold">プレイする日</h2>
+  <button type="button" onClick={() => setDays(days.map((day) => ({ ...day, playable: true })))}>
+    全選択
+  </button>
+  <button type="button" onClick={() => setDays(days.map((day) => ({ ...day, playable: false })))}>
+    全解除
+  </button>
+  {days.map((day, i) => (
+    <label key={day.date} className="block">
+      <input
+        type="checkbox"
+        checked={day.playable}
+        onChange={(e) => {
+          const next = [...days];
+          next[i] = { ...day, playable: e.target.checked };
+          setDays(next);
+        }}
+      />
+      {day.date}{i === 0 ? "（今日）" : ""}
+    </label>
+  ))}
+</section>
+
+  <section className="rounded bg-gray-100 p-4">
+  <p>現在ポイント：{currentPoints}pt</p>
+    <p>必要ポイント：{requiredTotal}pt</p>
+    <p>残り日数：{remainingDays}日</p>
+    <p>1日の目安ポイント</p>
+    <p className="text-xl font-bold">
+      {dailyQuota === 0 ? "達成済み" : `${dailyQuota}pt`}
+    </p>
+    {dailyQuota > 0 && schedule.findLast((day) => day.target > 0)?.target !== dailyQuota && (
+      <p>(最終日：{schedule.findLast((day) => day.target > 0)?.target}pt)</p>
+    )}
+  </section>
+
+
+
+  <section>
+<h2 className="font-bold">日ごとの予定</h2>
+<table className="w-full border-collapse">
+<thead>
+  <tr>
+    <th className="border p-2">日付</th>
+    <th className="border p-2">目標</th>
+    <th className="border p-2">累計</th>
+  </tr>
+</thead>
+<tbody>
+{schedule.map((day) => (
+    <tr key={day.date}>
+      <td className="border p-2">{day.date}</td>
+      <td className="border p-2">{day.target}pt</td>
+      <td className="border p-2">{day.cumulative}pt</td>
+    </tr>
+  ))}
+</tbody>
+</table>
+</section>
+
+<section className="space-y-3">
+  <h2 className="font-bold">結果を共有</h2>
+
+  <a
+    href={`https://line.me/R/share?text=${encodeURIComponent(fullShareText)}`}
+    target="_blank"
+    rel="noreferrer"
+    className="block rounded border p-3"
+  >
+    LINEで共有
+  </a>
+
+  <a
+    href={`https://x.com/intent/post?text=${encodeURIComponent(fullShareText)}`}
+    target="_blank"
+    rel="noreferrer"
+    className="block rounded border p-3"
+  >
+    Xで共有
+  </a>
+
+  <button
+    type="button"
+    onClick={() => navigator.share({ text: fullShareText })}
+    className="w-full rounded border p-3"
+  >
+    その他で共有
+  </button>
+</section>
+
+</main>
+);
 }
