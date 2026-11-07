@@ -151,9 +151,23 @@ const lastDayText = dailyQuota > 0 && lastSchedule?.target !== dailyQuota
   ? `／最終日：${lastSchedule?.target.toLocaleString()}pt`
   : "";
 
+// 選んだ日の最初と最後を「11/7〜11/18」の形にする
+const playableDays = days.filter((day) => day.playable);
+const formatDate = (date: string) => {
+  const [, m, d] = date.split("-");
+  return `${Number(m)}/${Number(d)}`;
+};
+const first = playableDays[0];
+const last = playableDays[playableDays.length - 1];
+const rangeText = !first
+  ? ""
+  : first === last
+    ? formatDate(first.date)
+    : `${formatDate(first.date)}〜${formatDate(last.date)}`;
+
 const shareText = dailyQuota === 0
   ? "報酬交換の目標を達成済みです！"
-  : `1日の目安：${dailyQuota.toLocaleString()}pt${lastDayText}／残り${rest.toLocaleString()}pt（${remainingDays}日）`;
+  : `1日の目安：${dailyQuota.toLocaleString()}pt${lastDayText}／残り${rest.toLocaleString()}pt（${rangeText}・${remainingDays}日）`;
 
 //共有リンク
 const params = new URLSearchParams({
