@@ -172,11 +172,12 @@ const rangeText = !first
 const shareText = dailyQuota === 0
   ? "報酬交換の目標を達成済みです！"
   : [
+    `選んだ日数：${remainingDays}日`,
+    `現在ポイント：${currentPoints.toLocaleString()}pt`,
+    `残り${rest.toLocaleString()}pt`,
     `1日の目安：${dailyQuota.toLocaleString()}pt`,
     firstDayText,
     lastDayText,
-    `残り${rest.toLocaleString()}pt`,
-    `（${rangeText}・${remainingDays}日）`,
   ].filter((line) => line !== "").join("\n");
 
 //共有リンク
