@@ -147,8 +147,12 @@ const schedule = calcSchedule(days, currentPoints, requiredTotal);
 
 //共有テキスト
 const lastSchedule = schedule.findLast((day) => day.target > 0);
+const firstSchedule = schedule.find((day) => day.target > 0);
+const firstDayText = dailyQuota > 0 && days[0].playable && firstSchedule?.target !== dailyQuota
+  ? `初日：${firstSchedule?.target.toLocaleString()}pt`
+  : "";
 const lastDayText = dailyQuota > 0 && lastSchedule?.target !== dailyQuota
-  ? `／最終日：${lastSchedule?.target.toLocaleString()}pt`
+  ? `最終日：${lastSchedule?.target.toLocaleString()}pt`
   : "";
 
 // 選んだ日の最初と最後を「11/7〜11/18」の形にする
@@ -167,7 +171,13 @@ const rangeText = !first
 
 const shareText = dailyQuota === 0
   ? "報酬交換の目標を達成済みです！"
-  : `1日の目安：${dailyQuota.toLocaleString()}pt\n${lastDayText}\n残り${rest.toLocaleString()}pt\n（${rangeText}・${remainingDays}日）`;
+  : [
+    `1日の目安：${dailyQuota.toLocaleString()}pt`,
+    firstDayText,
+    lastDayText,
+    `残り${rest.toLocaleString()}pt`,
+    `（${rangeText}・${remainingDays}日）`,
+  ].filter((line) => line !== "").join("\n");
 
 //共有リンク
 const params = new URLSearchParams({
@@ -268,9 +278,8 @@ return (
     <p className="text-xl font-bold">
       {dailyQuota === 0 ? "達成済み" : `${dailyQuota.toLocaleString()}pt`}
     </p>
-    {dailyQuota > 0 && schedule.findLast((day) => day.target > 0)?.target !== dailyQuota && (
-      <p>(最終日：{schedule.findLast((day) => day.target > 0)?.target.toLocaleString()}pt)</p>
-    )}
+    {firstDayText && <p>({firstDayText})</p>}
+    {lastDayText && <p>({lastDayText})</p>}
   </section>
 
 
