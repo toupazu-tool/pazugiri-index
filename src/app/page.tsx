@@ -167,7 +167,7 @@ const rangeText = !first
 
 const shareText = dailyQuota === 0
   ? "報酬交換の目標を達成済みです！"
-  : `1日の目安：${dailyQuota.toLocaleString()}pt${lastDayText}／残り${rest.toLocaleString()}pt（${rangeText}・${remainingDays}日）`;
+  : `1日の目安：${dailyQuota.toLocaleString()}pt\n${lastDayText}\n残り${rest.toLocaleString()}pt\n（${rangeText}・${remainingDays}日）`;
 
 //共有リンク
 const params = new URLSearchParams({
@@ -176,7 +176,7 @@ const params = new URLSearchParams({
   days: days.map((day) => day.playable ? "1" : "0").join(""),
 });
 const shareUrl = `https://toupazu-point-calc.vercel.app/?${params}#schedule`;
-const fullShareText = `${shareText}\n▼表で確認する\n${shareUrl}`;
+const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`;
 
 return (
   
