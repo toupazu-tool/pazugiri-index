@@ -1,26 +1,31 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* 文字の基本サイズ。100%が標準（16px）、112.5%で18px相当。Tailwindの大きさはこれを基準に全部変わる */
+html {
+  font-size: 112.5%;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* サイトで使う色とフォント（ここで決めると bg-brand-red などのクラスで使える） */
+@theme {
+  --color-brand-red: #e0464f;
+  --color-brand-blue: #3a7bd5;
+  --color-brand-green: #3fae6a;
+  --color-brand-yellow: #f2b632;
+  --color-cream: #fffaf0;
+  /* 和の帳面：紙・罫線・朱色。ここを変えると全体の色が変わります */
+  --color-notebook-paper: #fffdf8;
+  --color-notebook-line: #dfd4bf;
+  --color-notebook-red: #b65344;
+  --color-notebook-muted: #7a6f5d;
+  --color-notebook-beige: #f2ebdf;
+  --color-notebook-green: #4d7550;
+  --color-notebook-sage: #edf3e9;
+  --color-game-green: #4a8520; /* ゲーム画面の黄緑を深めにした色（元は #7cbb34） */
+  --color-game-gold: #c9a227; /* 境目の金色の線 */
+  --color-game-cream: #fcf0bc; /* ゲーム画面の薄黄色 */
+  --font-sans: var(--font-rounded), sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: #3b3b3b;
 }
