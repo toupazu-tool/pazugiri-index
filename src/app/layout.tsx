@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
-import { seoTitle, site, tool } from "@/lib/site";
+import { pageMeta, site } from "@/lib/site";
 import "./globals.css";
 
-// 丸ゴシックのフォントを読み込む
+// 丸ゴシック体のフォントを読み込む
 const rounded = M_PLUS_Rounded_1c({
   weight: ["400", "700", "800"],
   subsets: ["latin"],
@@ -12,36 +12,20 @@ const rounded = M_PLUS_Rounded_1c({
   preload: false, // 日本語フォントは大きいので、先読みしない
 });
 
-// 検索結果や共有カードに出る情報（PHPで <head> に書いていた meta タグをまとめて作ってくれる）
+// サイト全体の基本の title や meta タグ（各ページで上書きできる）
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: seoTitle,
-  description: tool.description,
-  alternates: { canonical: "/" },
-  openGraph: {
-    title: seoTitle,
-    description: tool.description,
-    url: "/",
-    siteName: site.name,
-    locale: "ja_JP",
-    type: "website",
-  },
-  twitter: { card: "summary_large_image" },
+  ...pageMeta(`${site.name}｜${site.tagline}`, site.description, "/"),
 };
 
-// AI検索や検索エンジン向けに「これは無料のWebツールです」と伝える情報（構造化データ）
+// 検索エンジンやAI検索向けに「このサイトの名前」を伝える情報（構造化データ）
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: tool.title,
-  description: tool.description,
+  "@type": "WebSite",
+  name: site.name,
+  description: site.description,
   url: site.url,
-  applicationCategory: "GameApplication",
-  operatingSystem: "Web",
   inLanguage: "ja",
-  isAccessibleForFree: true,
-  offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
-  publisher: { "@type": "Organization", name: site.name },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
