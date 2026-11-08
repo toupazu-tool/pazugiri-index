@@ -2,15 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { calcDailyQuota, calcRemainingDays, calcRequiredTotal, calcSchedule } from "@/lib/quota";
+import { event } from "@/lib/event";
+import { sendGAEvent } from "@next/third-parties/google";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
-//イベントデータ
-const event = {
-  name: "地獄めぐり",
-  category: "シナリオイベント",
-  start: "2026-11-04T18:00:00+09:00", // 開始：11/4 18:00
-  end: "2026-11-18T13:00:00+09:00", // 終了：11/18 12:59まで（13:00ちょうどに終了）
-  exchangeEnd: "2026-11-25T13:00:00+09:00", // 交換期限：11/25 12:59まで（13:00ちょうどに終了）
-};
 
 //カテゴリごとのラベルの色（PHPの連想配列と同じ。増やすときはここに1行足す）
 const categoryColors: Record<string, { label: string; frame: string }> = {
@@ -65,8 +61,12 @@ const rewards = [
   { name: "ウロコ", costPoints: 565, maxCount: 3, image: "/rewards/scale.png", amount: 1 },
 ];
 
+//入力内容をブラウザに保存するときの名前（イベントごとに分ける）
+const STORAGE_KEY = "toupazu-point-calc:jigoku-meguri-2026";
+
 export default function Home() {
 const [days, setDays] = useState(eventDays);
+const [loaded, setLoaded] = useState(false); // 保存データを読み終わったか
 const [today, setToday] = useState("");
 const [now, setNow] = useState<Date | null>(null);
 
@@ -77,11 +77,20 @@ useEffect(() => {
   const now = new Date();
 
   const params = new URLSearchParams(window.location.search);
+  //共有URLに値があればURLを優先。なければ前回ブラウザに保存した内容を使う（PHPの $_GET → $_COOKIE の順に見るイメージ）
+  const hasUrl = params.has("current") || params.has("counts") || params.has("days");
+  let saved: Record<string, string> = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+  } catch {
+    saved = {};
+  }
+  const pick = (name: string) => (hasUrl ? params.get(name) : saved[name] ?? null);
 
-  const current = params.get("current");
+  const current = pick("current");
   if (current) setCurrentPoints(Math.max(0, Number(current)));
 
-  const countsParam = params.get("counts");
+  const countsParam = pick("counts");
   if (countsParam) {
     const values = countsParam.split(",");
     setCounts(
@@ -93,7 +102,7 @@ useEffect(() => {
     );
   }
 
-  const daysParam = params.get("days");
+  const daysParam = pick("days");
   //URLに指定がなければ、今日から後の日だけを選んだ状態にする
   setDays((prev) =>
     prev.map((day, i) => ({
@@ -106,6 +115,7 @@ useEffect(() => {
       document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   }
+  setLoaded(true);
 }, []);
 
 //現在時刻を取得
@@ -124,6 +134,19 @@ useEffect(() => {
 
 const [currentPoints, setCurrentPoints] = useState(0);
 const [counts, setCounts] = useState(rewards.map(() => 0));
+
+//入力が変わるたびにブラウザへ保存（読み込みが終わる前は保存しない）
+useEffect(() => {
+  if (!loaded) return;
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      current: String(currentPoints),
+      counts: counts.join(","),
+      days: days.map((day) => (day.playable ? "1" : "0")).join(""),
+    })
+  );
+}, [loaded, currentPoints, counts, days]);
 
 const requiredTotal = calcRequiredTotal(rewards.map((r, i) => ({ ...r, count: counts[i] })));
 const remainingDays = calcRemainingDays(days);
@@ -219,19 +242,7 @@ const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}
 
 return (
   <>
-    {/* サイト共通の看板。4色は自作サイトのアクセント */}
-    <header className="border-b-[6px] border-game-gold bg-game-green px-6 py-5 text-white">
-      <div className="mx-auto flex max-w-2xl items-center gap-4">
-        {/* 自作ロゴ（public/logo.svg）を白丸に入れる。丸は size-[72px]、ロゴは h-11 で調整 */}
-        <span className="grid size-14 shrink-0 sm:size-[72px] place-items-center rounded-full bg-white shadow-md">
-          <img src="/logo.svg" alt="" width={205} height={195} className="h-8 w-auto sm:h-11" />
-        </span>
-        <div>
-            <p className="text-2xl leading-tight font-extrabold tracking-widest sm:text-3xl">ぱずぎり目録</p>
-            <p className="mt-1.5 text-xs tracking-wider sm:text-sm text-white/90">刀剣乱舞ぱずぎり非公式サイト</p>
-        </div>
-      </div>
-    </header>
+    <SiteHeader />
 
     <main className="mx-auto w-full max-w-2xl space-y-5 px-5 pb-8 text-sm leading-relaxed">
       {/* イベント終了後だけ出す、交換期限のお知らせ */}
@@ -252,6 +263,8 @@ return (
           <img src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" />
           <span>ぱずぎり<br className="sm:hidden" /> イベントノルマ計算ツール</span>
         </h1>
+        {/* 入力内容の保存についてのお知らせ */}
+        <p className="mt-3 text-center text-xs text-notebook-muted">入力内容は、お使いの端末のブラウザにだけ保存されます。</p>
       </div>
 
       {/* 帳面の各枠：背景・罫線・余白はここで調整できます */}
@@ -462,10 +475,10 @@ return (
       <section className="px-1 py-2">
         <h2 className="mb-3 text-center text-base font-extrabold">結果を共有</h2>
         <div className="grid grid-cols-2 gap-3">
-          <a href={`https://line.me/R/share?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" className="flex min-h-12 items-center justify-center rounded-xl bg-notebook-green px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">LINEで共有</a>
-          <a href={`https://x.com/intent/post?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" className="flex min-h-12 items-center justify-center rounded-xl bg-[#3d3b37] px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">Xで共有</a>
+          <a href={`https://line.me/R/share?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" onClick={() => sendGAEvent("event", "share", { method: "LINE" })} className="flex min-h-12 items-center justify-center rounded-xl bg-notebook-green px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">LINEで共有</a>
+          <a href={`https://x.com/intent/post?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" onClick={() => sendGAEvent("event", "share", { method: "X" })} className="flex min-h-12 items-center justify-center rounded-xl bg-[#3d3b37] px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">Xで共有</a>
         </div>
-        <button type="button" onClick={() => navigator.share({ text: fullShareText })} className="mt-2 min-h-11 w-full cursor-pointer text-xs text-notebook-muted underline underline-offset-4 hover:text-notebook-red focus-visible:outline-2 focus-visible:outline-brand-blue">その他で共有</button>
+        <button type="button" onClick={() => { sendGAEvent("event", "share", { method: "その他" }); navigator.share({ text: fullShareText }); }} className="mt-2 min-h-11 w-full cursor-pointer text-xs text-notebook-muted underline underline-offset-4 hover:text-notebook-red focus-visible:outline-2 focus-visible:outline-brand-blue">その他で共有</button>
       </section>
 
       <section aria-labelledby="schedule" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
@@ -502,21 +515,7 @@ return (
       </section>
     </main>
 
-    <footer className="border-t-[6px] border-game-gold bg-game-green px-5 py-7 text-center text-xs leading-loose text-white">
-      {/* ヘッダーと同じ白丸ロゴ、その下にサイト名 */}
-      <div className="mb-4 flex flex-col items-center gap-2">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-white shadow-md">
-          <img src="/logo.svg" alt="" width={205} height={195} className="h-7 w-auto" />
-        </span>
-        <p className="text-lg font-extrabold tracking-widest">ぱずぎり目録</p>
-      </div>
-      <p>ぱずぎり目録は『刀剣乱舞ぱずぎり』の非公式ファンサイトです。公式とは関係ありません。</p>
-      {/* 著作権表記：本家（公式サイトと同じ書き方）と、このサイト */}
-      <p className="mt-4 text-white/80">ゲーム内の画像・名称の著作権は権利者に帰属します。</p>
-      <p className="mt-1 text-[0.6rem] text-white/80 sm:text-xs">
-        <span className="inline-block whitespace-nowrap">©2026 EXNOA LLC/NITRO PLUS</span> ／ <span className="inline-block whitespace-nowrap">© 2026 ぱずぎり目録</span>
-      </p>
-    </footer>
+    <SiteFooter />
 
   </>
 );
