@@ -399,7 +399,7 @@ return (
           <button type="button" onClick={() => setDays(days.map((day, i) => ({ ...day, playable: i !== days.length - 1 })))} className="min-h-11 rounded-sm border border-notebook-line px-2 text-xs font-bold text-notebook-muted hover:bg-notebook-beige focus-visible:outline-2 focus-visible:outline-brand-blue">最終日以外</button>
         </div>
         {/* チェックボックスは残し、peerで選択時の見た目だけ切り替える */}
-        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
           {days.map((day, i) => (
             <label key={day.date} className="min-w-0 cursor-pointer">
               <input
@@ -413,7 +413,7 @@ return (
                 className="peer sr-only"
               />
               {/* 選択中：緑線＋白背景、チェックは緑丸に白抜き／未選択：フィルターで暗く */}
-              <span className={`relative flex min-h-14 flex-row flex-wrap items-center gap-x-3 rounded-md sm:min-h-20 sm:flex-col sm:justify-center sm:gap-x-0 border-2 px-3 py-2 transition sm:px-1 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-blue ${
+              <span className={`relative flex min-h-14 flex-row items-center gap-x-3 rounded-md sm:min-h-20 sm:flex-col sm:justify-center sm:gap-x-0 border-2 px-3 py-2 transition sm:px-1 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-blue ${
                 day.playable
                   ? "border-notebook-green bg-white text-notebook-green shadow-md"
                   : "border-notebook-line bg-notebook-beige text-notebook-muted brightness-[0.85] grayscale"
@@ -421,10 +421,13 @@ return (
                 <span aria-hidden="true" className={`grid size-6 shrink-0 sm:mb-1 place-items-center rounded-full text-sm font-extrabold ${day.playable ? "bg-notebook-green text-white" : "border-2 border-notebook-line bg-white"}`}>
                   {day.playable ? "✓" : ""}
                 </span>
+                {/* 日付とかっこをひとまとめに（スマホは左寄せ、PCは中央） */}
+                <span className="flex flex-col leading-tight sm:items-center">
                 <span className="text-lg font-extrabold">{formatDate(day.date)}</span>
                 {day.date === days[0].date && <span className="text-xs">（{Number(event.start.slice(11, 13))}時開始）</span>}
                 {day.date === days[days.length - 1].date && <span className="text-xs">（{Number(event.end.slice(11, 13))}時終了）</span>}
                 {day.date === today && <span className="text-xs font-bold">（今日）</span>}
+                </span>
               </span>
             </label>
           ))}
