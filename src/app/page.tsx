@@ -518,7 +518,7 @@ return (
       <p>ぱずぎり目録は『刀剣乱舞ぱずぎり』の非公式ファンサイトです。公式とは関係ありません。</p>
       {/* 著作権表記：本家（公式サイトと同じ書き方）と、このサイト */}
       <p className="mt-4 text-white/80">ゲーム内の画像・名称の著作権は権利者に帰属します。</p>
-      <p className="mt-1 text-white/80">{`©2026 EXNOA LLC/NITRO PLUS ／ © ${new Date().getFullYear()} ぱずぎり目録`}</p>
+      <p className="mt-1 text-white/80">{`©2026 EXNOA LLC/NITRO PLUS ／ © 2026 ぱずぎり目録`}</p>
     </footer>
 
     {/* ページトップに戻るボタン（右下に固定）。押すとふわっと上に戻る */}
