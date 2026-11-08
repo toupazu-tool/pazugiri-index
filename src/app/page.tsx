@@ -424,9 +424,9 @@ return (
                 {/* 日付とかっこをひとまとめに（スマホは左寄せ、PCは中央） */}
                 <span className="flex flex-col leading-tight sm:items-center">
                 <span className="text-lg font-extrabold">{formatDate(day.date)}</span>
-                {day.date === days[0].date && <span className="text-xs">（{Number(event.start.slice(11, 13))}時開始）</span>}
-                {day.date === days[days.length - 1].date && <span className="text-xs">（{Number(event.end.slice(11, 13))}時終了）</span>}
-                {day.date === today && <span className="text-xs font-bold">（今日）</span>}
+                {day.date === days[0].date && <span className="text-xs whitespace-nowrap">({Number(event.start.slice(11, 13))}時開始)</span>}
+                {day.date === days[days.length - 1].date && <span className="text-xs whitespace-nowrap">({Number(event.end.slice(11, 13))}時終了)</span>}
+                {day.date === today && <span className="text-xs font-bold whitespace-nowrap">(今日)</span>}
                 </span>
               </span>
             </label>
@@ -513,7 +513,9 @@ return (
       <p>ぱずぎり目録は『刀剣乱舞ぱずぎり』の非公式ファンサイトです。公式とは関係ありません。</p>
       {/* 著作権表記：本家（公式サイトと同じ書き方）と、このサイト */}
       <p className="mt-4 text-white/80">ゲーム内の画像・名称の著作権は権利者に帰属します。</p>
-      <p className="mt-1 text-white/80">{`©2026 EXNOA LLC/NITRO PLUS ／ © 2026 ぱずぎり目録`}</p>
+      <p className="mt-1 text-[0.6rem] text-white/80 sm:text-xs">
+        <span className="inline-block whitespace-nowrap">©2026 EXNOA LLC/NITRO PLUS</span> ／ <span className="inline-block whitespace-nowrap">© 2026 ぱずぎり目録</span>
+      </p>
     </footer>
 
   </>
