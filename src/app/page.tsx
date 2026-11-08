@@ -122,15 +122,6 @@ useEffect(() => {
   return () => clearInterval(id);
 }, []);
 
-//TOPボタン：少し下にスクロールしたら出す（一番上ではフェードアウト）
-const [showTop, setShowTop] = useState(false);
-useEffect(() => {
-  const onScroll = () => setShowTop(window.scrollY > 300); // 300pxより下で表示
-  onScroll(); // 読み込み直後の位置でも判定
-  window.addEventListener("scroll", onScroll);
-  return () => window.removeEventListener("scroll", onScroll); // 後片付け
-}, []);
-
 const [currentPoints, setCurrentPoints] = useState(0);
 const [counts, setCounts] = useState(rewards.map(() => 0));
 
@@ -232,12 +223,12 @@ return (
     <header className="border-b-[6px] border-game-gold bg-game-green px-6 py-5 text-white">
       <div className="mx-auto flex max-w-2xl items-center gap-4">
         {/* 自作ロゴ（public/logo.svg）を白丸に入れる。丸は size-[72px]、ロゴは h-11 で調整 */}
-        <span className="grid size-[72px] shrink-0 place-items-center rounded-full bg-white shadow-md">
-          <img src="/logo.svg" alt="" width={205} height={195} className="h-11 w-auto" />
+        <span className="grid size-14 shrink-0 sm:size-[72px] place-items-center rounded-full bg-white shadow-md">
+          <img src="/logo.svg" alt="" width={205} height={195} className="h-8 w-auto sm:h-11" />
         </span>
         <div>
-            <p className="text-3xl leading-tight font-extrabold tracking-widest">ぱずぎり目録</p>
-            <p className="mt-1.5 text-sm tracking-wider text-white/90">刀剣乱舞ぱずぎり非公式サイト</p>
+            <p className="text-2xl leading-tight font-extrabold tracking-widest sm:text-3xl">ぱずぎり目録</p>
+            <p className="mt-1.5 text-xs tracking-wider sm:text-sm text-white/90">刀剣乱舞ぱずぎり非公式サイト</p>
         </div>
       </div>
     </header>
@@ -256,18 +247,15 @@ return (
         </p>
       )}
       <div className="px-1 pt-6 pb-1">
-        <h1 className="mt-2 text-2xl leading-relaxed font-extrabold">ぱずぎり<br className="sm:hidden" /> イベントノルマ計算ツール</h1>
-        {/* ヘッダーと同じ4色の飾りを、見出しの下線として使う */}
-        <div aria-hidden="true" className="mt-2 flex gap-1">
-          <span className="h-1.5 w-10 rounded-full bg-brand-red" />
-          <span className="h-1.5 w-10 rounded-full bg-brand-blue" />
-          <span className="h-1.5 w-10 rounded-full bg-brand-green" />
-          <span className="h-1.5 w-10 rounded-full bg-brand-yellow" />
-        </div>
+        {/* キャラアイコン（public/to-top.svg）。スマホは上、PCは横 */}
+        <h1 className="mt-2 flex flex-col items-center justify-center gap-2 text-center text-2xl sm:flex-row sm:gap-3 leading-relaxed font-extrabold">
+          <img src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" />
+          <span>ぱずぎり<br className="sm:hidden" /> イベントノルマ計算ツール</span>
+        </h1>
       </div>
 
       {/* 帳面の各枠：背景・罫線・余白はここで調整できます */}
-      <section className={`rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border-4 bg-notebook-paper p-5 ${categoryColors[event.category]?.frame ?? "border-notebook-line"}`}>
+      <section className={`rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border-4 bg-notebook-paper px-3 py-5 sm:p-5 ${categoryColors[event.category]?.frame ?? "border-notebook-line"}`}>
         <p className={`inline-block rounded-sm px-2 py-1 text-xs font-bold ${categoryColors[event.category]?.label ?? "bg-notebook-beige text-notebook-muted"}`}>{event.category}</p>
         <h2 className="mt-3 text-2xl font-extrabold tracking-widest">{event.name}</h2>
         <p className="mt-1 text-xs text-notebook-muted">
@@ -277,7 +265,7 @@ return (
         <p className="mt-3 text-sm font-extrabold text-notebook-red">⚠ {exchangeText}</p>
       </section>
 
-      <section className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper p-5">
+      <section className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
           <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-blue text-xs font-bold text-white">01</span>
           <h2 className="text-base font-extrabold"><label htmlFor="current-points">現在のポイント</label></h2>
@@ -298,7 +286,7 @@ return (
         <p className="mt-2 text-xs text-notebook-muted">ゲーム内の所持ポイントを入力してください。</p>
       </section>
 
-      <section aria-labelledby="rewards" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper p-5">
+      <section aria-labelledby="rewards" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
           <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-notebook-red text-xs font-bold text-white">02</span>
           <h2 id="rewards" className="text-base font-extrabold">報酬の希望数</h2>
@@ -313,7 +301,7 @@ return (
           </button>
         </div>
         {/* ゲームの交換所みたいに、3列のカードで並べる */}
-        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {rewards.map((reward, i) => {
             const done = reward.maxCount === 0; // 交換済み
             const selected = counts[i] > 0; // 1個以上選んでいる
@@ -326,7 +314,7 @@ return (
             return (
               <li
                 key={reward.name}
-                className={`flex flex-col items-center rounded-xl border-2 px-1 pb-2 pt-3 ${
+                className={`grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border-2 px-3 py-2 sm:flex sm:flex-col sm:gap-0 sm:px-1 sm:pb-2 sm:pt-3 ${
                   done
                     ? "border-notebook-line bg-notebook-beige opacity-60"
                     : selected
@@ -335,35 +323,39 @@ return (
                 }`}
               >
                 {/* アイコン */}
-                <div className="relative">
-                  <img src={reward.image} alt="" width={64} height={64} className="size-20" />
+                <div className="relative shrink-0">
+                  <img src={reward.image} alt="" width={64} height={64} className="size-14 sm:size-20" />
                   {reward.amount > 1 && (
                     <span className="absolute -bottom-1 -right-2 text-lg font-extrabold text-[#5a4630] [text-shadow:0_0_2px_#fff,0_0_2px_#fff,0_0_2px_#fff]">
                       {reward.amount}
                     </span>
                   )}
                 </div>
-                {/* 名前と値段 */}
-                <p className="mt-2 flex items-center text-center text-base font-bold leading-snug">{reward.name}</p>
-                <p className="mt-2 flex items-center gap-1 rounded-full border border-notebook-line bg-notebook-paper px-3 text-base font-extrabold">
+                {/* 名前・値段・回数（スマホは左寄せで縦、PCは中央） */}
+                <div className="min-w-0 flex-1 sm:flex sm:flex-col sm:items-center">
+                <p className="text-base font-bold leading-snug sm:mt-2 sm:text-center">{reward.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1 sm:mt-0 sm:flex-col sm:gap-0">
+                <p className="flex items-center gap-1 sm:mt-2 rounded-full border border-notebook-line bg-notebook-paper px-3 text-base font-extrabold">
                   <span aria-hidden="true" className="grid size-5 place-items-center rounded-full bg-brand-yellow text-xs text-white">P</span>
                   {reward.costPoints.toLocaleString()}
                 </p>
                 {/* 「最大◯回」バッジ */}
-                <p className="mt-2">
+                <p className="sm:mt-2">
                   <span className="whitespace-nowrap rounded-full bg-[#6f5838] px-2 py-1 text-xs font-bold leading-6 text-white">
                       {done ? "交換済み" : `最大${reward.maxCount}回`}
                   </span>
                 </p>
+                </div>
+                </div>
 
                 {/* 個数を選ぶ（－ 数字 ＋） */}
-                <div className="mt-3 flex items-center">
+                <div className="col-span-2 flex shrink-0 items-center justify-self-end sm:mt-3">
                   <button
                     type="button"
                     aria-label={`${reward.name}を1つ減らす`}
                     disabled={done || counts[i] === 0}
                     onClick={() => change(counts[i] - 1)}
-                    className="size-10 rounded-full border border-notebook-line bg-notebook-paper font-bold text-notebook-muted disabled:opacity-40"
+                    className="size-8 shrink-0 rounded-full border border-notebook-line sm:size-10 bg-notebook-paper font-bold text-notebook-muted disabled:opacity-40"
                   >
                     －
                   </button>
@@ -377,14 +369,14 @@ return (
                     value={counts[i] === 0 ? "" : counts[i]}
                     placeholder="0"
                     onChange={(e) => change(Number(e.target.value))}
-                    className="mx-1 h-10 w-12 rounded-sm border border-notebook-line bg-white text-center text-lg font-bold [appearance:textfield] disabled:bg-notebook-beige [&::-webkit-inner-spin-button]:appearance-none"
+                    className="mx-2 h-8 w-10 rounded-sm sm:mx-2 sm:h-10 sm:w-12 border border-notebook-line bg-white text-center text-lg font-bold [appearance:textfield] disabled:bg-notebook-beige [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
                     aria-label={`${reward.name}を1つ増やす`}
                     disabled={done || counts[i] >= reward.maxCount}
                     onClick={() => change(counts[i] + 1)}
-                    className="size-10 rounded-full border border-notebook-red bg-notebook-red font-bold text-white disabled:opacity-40"
+                    className="size-8 shrink-0 rounded-full border border-notebook-red sm:size-10 bg-notebook-red font-bold text-white disabled:opacity-40"
                   >
                     ＋
                   </button>
@@ -395,7 +387,7 @@ return (
         </ul>
       </section>
 
-      <section aria-labelledby="playable-days" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper p-5">
+      <section aria-labelledby="playable-days" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
           <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-notebook-green text-xs font-bold text-white">03</span>
           <h2 id="playable-days" className="text-base font-extrabold">プレイする日</h2>
@@ -407,7 +399,7 @@ return (
           <button type="button" onClick={() => setDays(days.map((day, i) => ({ ...day, playable: i !== days.length - 1 })))} className="min-h-11 rounded-sm border border-notebook-line px-2 text-xs font-bold text-notebook-muted hover:bg-notebook-beige focus-visible:outline-2 focus-visible:outline-brand-blue">最終日以外</button>
         </div>
         {/* チェックボックスは残し、peerで選択時の見た目だけ切り替える */}
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-5">
           {days.map((day, i) => (
             <label key={day.date} className="min-w-0 cursor-pointer">
               <input
@@ -421,12 +413,12 @@ return (
                 className="peer sr-only"
               />
               {/* 選択中：緑線＋白背景、チェックは緑丸に白抜き／未選択：フィルターで暗く */}
-              <span className={`relative flex min-h-20 flex-col items-center justify-center rounded-md border-2 px-1 py-2 transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-blue ${
+              <span className={`relative flex min-h-14 flex-row flex-wrap items-center gap-x-3 rounded-md sm:min-h-20 sm:flex-col sm:justify-center sm:gap-x-0 border-2 px-3 py-2 transition sm:px-1 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-blue ${
                 day.playable
                   ? "border-notebook-green bg-white text-notebook-green shadow-md"
                   : "border-notebook-line bg-notebook-beige text-notebook-muted brightness-[0.85] grayscale"
               } ${day.date === today ? "ring-2 ring-notebook-red ring-offset-2 ring-offset-notebook-paper" : ""}`}>
-                <span aria-hidden="true" className={`absolute top-1 left-1 grid size-6 place-items-center rounded-full text-sm font-extrabold ${day.playable ? "bg-notebook-green text-white" : "border-2 border-notebook-line bg-white"}`}>
+                <span aria-hidden="true" className={`grid size-6 shrink-0 sm:mb-1 place-items-center rounded-full text-sm font-extrabold ${day.playable ? "bg-notebook-green text-white" : "border-2 border-notebook-line bg-white"}`}>
                   {day.playable ? "✓" : ""}
                 </span>
                 <span className="text-lg font-extrabold">{formatDate(day.date)}</span>
@@ -441,7 +433,7 @@ return (
       </section>
 
       {/* 朱色の二重枠と判子風のラベルで、結果を一番目立たせる */}
-      <section className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border-4 border-double border-notebook-red bg-white p-5">
+      <section className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border-4 border-double border-notebook-red bg-white px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
           <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-notebook-red text-xs font-bold text-white">✓</span>
           <h2 className="text-base font-extrabold">あなたの目標</h2>
@@ -473,7 +465,7 @@ return (
         <button type="button" onClick={() => navigator.share({ text: fullShareText })} className="mt-2 min-h-11 w-full cursor-pointer text-xs text-notebook-muted underline underline-offset-4 hover:text-notebook-red focus-visible:outline-2 focus-visible:outline-brand-blue">その他で共有</button>
       </section>
 
-      <section aria-labelledby="schedule" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper p-5">
+      <section aria-labelledby="schedule" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
           <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-yellow text-xs font-bold text-white">04</span>
           <h2 id="schedule" className="scroll-mt-5 text-base font-extrabold">日ごとの予定</h2>
@@ -481,7 +473,7 @@ return (
         {/* 数値が大きい場合もページ全体ではなく表だけ横スクロール */}
         <div role="region" aria-label="日ごとの予定表（横スクロールできます）" tabIndex={0} className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-brand-blue">
           {/* table-fixed＋w-1/3で3列を同じ幅に。線と見出しは黄色ベース */}
-          <table className="w-full table-fixed border-collapse border-2 border-brand-yellow text-center text-base tabular-nums">
+          <table className="w-full table-fixed border-collapse border-2 border-brand-yellow text-center text-sm tabular-nums sm:text-base">
             <thead>
               <tr className="bg-brand-yellow text-white">
                 <th scope="col" className="w-1/3 border border-brand-yellow px-2 py-3 font-extrabold">日付</th>
@@ -492,8 +484,8 @@ return (
             <tbody>
               {schedule.map((day) => (
                 <tr key={day.date} className="bg-white even:bg-[#fffbea] last:bg-[#fff2c4] last:font-bold">
-                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">
-                    {formatDate(day.date)}<span className="text-sm">（{weekdayOf(day.date)}）</span>
+                  <td className="border border-brand-yellow/50 px-1 py-3 sm:px-2">
+                    {formatDate(day.date)}<span className="inline-block text-xs sm:text-sm">（{weekdayOf(day.date)}）</span>
                     {day.date === days[0].date && <span className="block text-xs text-notebook-muted">（{Number(event.start.slice(11, 13))}時開始）</span>}
                     {day.date === days[days.length - 1].date && <span className="block text-xs text-notebook-muted">（{Number(event.end.slice(11, 13))}時終了）</span>}
                   </td>
@@ -521,17 +513,6 @@ return (
       <p className="mt-1 text-white/80">{`©2026 EXNOA LLC/NITRO PLUS ／ © 2026 ぱずぎり目録`}</p>
     </footer>
 
-    {/* ページトップに戻るボタン（右下に固定）。押すとふわっと上に戻る */}
-    <button
-      type="button"
-      aria-label="ページの一番上に戻る"
-      tabIndex={showTop ? 0 : -1}
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed right-4 bottom-4 z-10 flex size-[88px] cursor-pointer flex-col items-center justify-center rounded-full border-4 border-game-gold bg-white shadow-[0_4px_8px_rgba(90,70,48,0.3)] transition duration-300 hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${showTop ? "opacity-100" : "pointer-events-none opacity-0"}`}
-    >
-      <img src="/to-top.svg" alt="" width={178} height={158} className="h-11 w-auto" />
-      <span className="mt-0.5 text-sm leading-none font-extrabold text-[#6f5838]">TOP</span>
-    </button>
   </>
 );
 }
