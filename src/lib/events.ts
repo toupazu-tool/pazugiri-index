@@ -32,7 +32,7 @@ export const events: EventData[] = [
       { name: "11月10回召喚チケット", costPoints: 8000, maxCount: 1, image: "/rewards/november-ten-summon-ticket.png", amount: 1 },
       { name: "小判×10000", costPoints: 4000, maxCount: 3, image: "/rewards/koban-10000.png", amount: 10000 },
       { name: "小判×10", costPoints: 10, maxCount: 999, image: "/rewards/koban-10.png", amount: 10 },
-      { name: "おみやげ人形焼き", costPoints: 1000, maxCount: 5, image: "/rewards/souvenir-ningyoyaki.png", amount: 1 },
+      { name: "おみやげ人形焼き", costPoints: 1000, maxCount: 6, image: "/rewards/souvenir-ningyoyaki.png", amount: 1 },
       { name: "経験値の書・小×5", costPoints: 100, maxCount: 5, image: "/rewards/experience-book-small.png", amount: 5 },
       { name: "経験値の書・中", costPoints: 500, maxCount: 3, image: "/rewards/experience-book-medium.png", amount: 1 },
       { name: "経験値の書・大", costPoints: 2000, maxCount: 1, image: "/rewards/experience-book-large.png", amount: 1 },
