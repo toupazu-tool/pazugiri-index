@@ -11,7 +11,7 @@ export const TABLE_IMAGE_SITE_NAME = "ぱずぎり目録";
 export const TABLE_IMAGE_COLUMNS = 2;
 
 /** 1倍サイズ。実際のPNGはこれの2倍で描いて、きれいに見せる */
-export const TABLE_IMAGE_WIDTH = 1200;
+export const TABLE_IMAGE_WIDTH = 880;
 export const TABLE_IMAGE_SCALE = 2;
 
 export const TABLE_IMAGE_COLORS = {
@@ -55,6 +55,9 @@ export type TableImageLayout = {
   titleToSite: number;
   siteToTable: number;
   tableToFooter: number;
+  headerSize: number;
+  cellSize: number;
+  badgeSize: number;
   rowsPerColumn: number;
   columnCount: number;
   tableTop: number;
@@ -99,18 +102,21 @@ export function getTableImageLayout(
 ): TableImageLayout {
   const columns = Math.max(1, columnCount);
   const rowsPerColumn = Math.max(1, Math.ceil(rowCount / columns));
-  const padX = 48;
-  const padTop = 40;
-  const padBottom = 32;
-  const titleSize = 44;
-  const siteNameSize = 20;
-  const footerSize = 18;
-  const headerH = 40;
-  const rowH = 32;
-  const colGap = 24;
+  const padX = 36;
+  const padTop = 36;
+  const padBottom = 28;
+  const titleSize = 48;
+  const siteNameSize = 24;
+  const footerSize = 22;
+  const headerH = 48;
+  const rowH = 46;
+  const colGap = 16;
   const titleToSite = 10;
-  const siteToTable = 28;
-  const tableToFooter = 22;
+  const siteToTable = 24;
+  const tableToFooter = 20;
+  const headerSize = 22;
+  const cellSize = 26;
+  const badgeSize = 16;
   const tableHeight = headerH + rowsPerColumn * rowH;
   const tableTop = padTop + titleSize + titleToSite + siteNameSize + siteToTable;
   const height = tableTop + tableHeight + tableToFooter + footerSize + padBottom;
@@ -129,6 +135,9 @@ export function getTableImageLayout(
     titleToSite,
     siteToTable,
     tableToFooter,
+    headerSize,
+    cellSize,
+    badgeSize,
     rowsPerColumn,
     columnCount: columns,
     tableTop,
@@ -253,8 +262,8 @@ function drawOneTable(
 ) {
   const { x, y, width, rows, layout, fontFamily, highlightLevel } = args;
   const colors = TABLE_IMAGE_COLORS;
-  const colLv = Math.round(width * 0.2);
-  const colNeed = Math.round(width * 0.36);
+  const colLv = Math.round(width * 0.3);
+  const colNeed = Math.round(width * 0.3);
   const colCum = width - colLv - colNeed;
   const headers = TABLE_IMAGE_HEADERS;
   const colWidths = [colLv, colCum, colNeed];
@@ -269,7 +278,7 @@ function drawOneTable(
   ctx.fillStyle = colors.headerText;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `800 16px ${fontFamily}`;
+  ctx.font = `800 ${layout.headerSize}px ${fontFamily}`;
   let headerX = x;
   headers.forEach((label, i) => {
     ctx.fillText(label, headerX + colWidths[i] / 2, y + layout.headerH / 2);
@@ -295,26 +304,32 @@ function drawOneTable(
     values.forEach((value, i) => {
       if (i === 0) {
         ctx.fillStyle = isHighlight ? colors.red : colors.text;
-        ctx.font = `800 16px ${fontFamily}`;
+        ctx.font = `800 ${layout.cellSize}px ${fontFamily}`;
         if (isHighlight) {
-          // 数字を少し左に寄せて、右に「いまここ」の印を置く
-          ctx.fillText(value, cellX + colWidths[i] / 2 - 18, rowY + layout.rowH / 2);
-          const badgeW = 44;
-          const badgeH = 16;
-          const badgeX = cellX + colWidths[i] - badgeW - 6;
+          // 数字と「いまここ」をセルの中でひとまとまりにして置く
+          const numW = ctx.measureText(value).width;
+          const gap = 6;
+          ctx.font = `800 ${layout.badgeSize}px ${fontFamily}`;
+          const badgeW = Math.ceil(ctx.measureText("いまここ").width + 14);
+          const badgeH = layout.badgeSize + 8;
+          const groupW = numW + gap + badgeW;
+          const groupX = cellX + Math.max(2, (colWidths[i] - groupW) / 2);
+          ctx.font = `800 ${layout.cellSize}px ${fontFamily}`;
+          ctx.fillText(value, groupX + numW / 2, rowY + layout.rowH / 2);
+          const badgeX = groupX + numW + gap;
           const badgeY = rowY + (layout.rowH - badgeH) / 2;
           ctx.fillStyle = colors.red;
-          roundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 8);
+          roundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
           ctx.fill();
           ctx.fillStyle = colors.headerText;
-          ctx.font = `800 10px ${fontFamily}`;
+          ctx.font = `800 ${layout.badgeSize}px ${fontFamily}`;
           ctx.fillText("いまここ", badgeX + badgeW / 2, badgeY + badgeH / 2 + 0.5);
         } else {
           ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
         }
       } else {
         ctx.fillStyle = colors.text;
-        ctx.font = `${isHighlight ? "800" : "700"} 16px ${fontFamily}`;
+        ctx.font = `${isHighlight ? "800" : "700"} ${layout.cellSize}px ${fontFamily}`;
         ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
       }
       cellX += colWidths[i];
