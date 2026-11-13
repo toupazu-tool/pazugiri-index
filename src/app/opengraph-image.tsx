@@ -9,6 +9,6 @@ export default async function Image() {
   return createSiteOgImage({
     title: "ぱずぎり目録",
     subtitle: "刀剣乱舞ぱずぎりの非公式ファンサイト",
-    toolsLine: "イベントノルマ計算・絵巻守Lv早見表",
+    toolsLine: "ツールなど、楽しく遊ぶコンテンツまとめ",
   });
 }
