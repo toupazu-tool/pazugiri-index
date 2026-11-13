@@ -262,18 +262,20 @@ function drawOneTable(
 ) {
   const { x, y, width, rows, layout, fontFamily, highlightLevel } = args;
   const colors = TABLE_IMAGE_COLORS;
-  const colLv = Math.round(width * 0.3);
-  const colNeed = Math.round(width * 0.3);
+  // Lv列は数字が収まる幅に抑え、余った分をレベル累計と必要経験値へ回す
+  const colLv = Math.round(width * 0.22);
+  const colNeed = Math.round(width * 0.36);
   const colCum = width - colLv - colNeed;
   const headers = TABLE_IMAGE_HEADERS;
   const colWidths = [colLv, colCum, colNeed];
 
+  const tableH = layout.headerH + rows.length * layout.rowH;
+  // 画面の表と同じ色。外枠・見出しは brand-yellow、本文の罫線は 50%
+  const gridSoft = "rgba(242, 182, 50, 0.5)";
+
   // ヘッダー
   ctx.fillStyle = colors.yellow;
   ctx.fillRect(x, y, width, layout.headerH);
-  ctx.strokeStyle = colors.yellow;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x + 1, y + 1, width - 2, layout.headerH + rows.length * layout.rowH - 2);
 
   ctx.fillStyle = colors.headerText;
   ctx.textAlign = "center";
@@ -291,12 +293,6 @@ function drawOneTable(
     ctx.fillStyle = isHighlight ? colors.highlight : rowIndex % 2 === 0 ? colors.rowOdd : colors.rowEven;
     ctx.fillRect(x, rowY, width, layout.rowH);
 
-    if (isHighlight) {
-      ctx.strokeStyle = colors.red;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x + 1.5, rowY + 1.5, width - 3, layout.rowH - 3);
-    }
-
     const values = [String(row.level), formatInt(row.levelCumulative), formatInt(row.need)];
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -305,28 +301,8 @@ function drawOneTable(
       if (i === 0) {
         ctx.fillStyle = isHighlight ? colors.red : colors.text;
         ctx.font = `800 ${layout.cellSize}px ${fontFamily}`;
-        if (isHighlight) {
-          // 数字と「いまここ」をセルの中でひとまとまりにして置く
-          const numW = ctx.measureText(value).width;
-          const gap = 6;
-          ctx.font = `800 ${layout.badgeSize}px ${fontFamily}`;
-          const badgeW = Math.ceil(ctx.measureText("いまここ").width + 14);
-          const badgeH = layout.badgeSize + 8;
-          const groupW = numW + gap + badgeW;
-          const groupX = cellX + Math.max(2, (colWidths[i] - groupW) / 2);
-          ctx.font = `800 ${layout.cellSize}px ${fontFamily}`;
-          ctx.fillText(value, groupX + numW / 2, rowY + layout.rowH / 2);
-          const badgeX = groupX + numW + gap;
-          const badgeY = rowY + (layout.rowH - badgeH) / 2;
-          ctx.fillStyle = colors.red;
-          roundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
-          ctx.fill();
-          ctx.fillStyle = colors.headerText;
-          ctx.font = `800 ${layout.badgeSize}px ${fontFamily}`;
-          ctx.fillText("いまここ", badgeX + badgeW / 2, badgeY + badgeH / 2 + 0.5);
-        } else {
-          ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
-        }
+        // 保存画像は列を狭めるため「いまここ」バッジは置かず、行の色と赤枠だけで示す
+        ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
       } else {
         ctx.fillStyle = colors.text;
         ctx.font = `${isHighlight ? "800" : "700"} ${layout.cellSize}px ${fontFamily}`;
@@ -336,16 +312,51 @@ function drawOneTable(
     });
   });
 
-  // 列の薄い区切り
-  ctx.strokeStyle = "rgba(242, 182, 50, 0.45)";
+  // 画面の表と同じく、行・列のセル罫線を引く
   ctx.lineWidth = 1;
+  ctx.strokeStyle = gridSoft;
+  for (let r = 1; r < rows.length; r++) {
+    const lineY = y + layout.headerH + r * layout.rowH + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, lineY);
+    ctx.lineTo(x + width, lineY);
+    ctx.stroke();
+  }
   let gridX = x + colLv;
   for (let i = 0; i < 2; i++) {
     ctx.beginPath();
-    ctx.moveTo(gridX, y);
-    ctx.lineTo(gridX, y + layout.headerH + rows.length * layout.rowH);
+    ctx.moveTo(gridX + 0.5, y + layout.headerH);
+    ctx.lineTo(gridX + 0.5, y + tableH);
     ctx.stroke();
     gridX += i === 0 ? colCum : colNeed;
+  }
+
+  ctx.strokeStyle = colors.yellow;
+  ctx.beginPath();
+  ctx.moveTo(x, y + layout.headerH + 0.5);
+  ctx.lineTo(x + width, y + layout.headerH + 0.5);
+  ctx.stroke();
+  gridX = x + colLv;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(gridX + 0.5, y);
+    ctx.lineTo(gridX + 0.5, y + layout.headerH);
+    ctx.stroke();
+    gridX += i === 0 ? colCum : colNeed;
+  }
+
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + 1, y + 1, width - 2, tableH - 2);
+
+  // 強調の赤枠は罫線の上に描く
+  if (typeof highlightLevel === "number") {
+    const rowIndex = rows.findIndex((row) => row.level === highlightLevel);
+    if (rowIndex >= 0) {
+      const rowY = y + layout.headerH + rowIndex * layout.rowH;
+      ctx.strokeStyle = colors.red;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 1.5, rowY + 1.5, width - 3, layout.rowH - 3);
+    }
   }
 }
 
