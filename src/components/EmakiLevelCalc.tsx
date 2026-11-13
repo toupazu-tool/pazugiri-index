@@ -167,7 +167,7 @@ export function EmakiLevelCalc() {
           <h1 className="mt-2 flex flex-col items-center justify-center gap-2 text-center text-2xl leading-relaxed font-extrabold sm:flex-row sm:gap-3">
             <Image src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" unoptimized />
             <span className="flex flex-col items-center leading-snug">
-              <span>絵巻守Lv早見表</span>
+              <span>ぱずぎり 絵巻守Lv早見表</span>
               <span className="text-base font-bold text-notebook-muted sm:text-lg">経験値計算ツール</span>
             </span>
           </h1>
