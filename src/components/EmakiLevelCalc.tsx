@@ -241,7 +241,7 @@ export function EmakiLevelCalc() {
           </div>
 
           <div className="mt-4 space-y-2">
-            <h3 className="text-center text-sm font-extrabold">表の画像</h3>
+            <h3 className="text-center text-sm font-extrabold">表を画像保存</h3>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
