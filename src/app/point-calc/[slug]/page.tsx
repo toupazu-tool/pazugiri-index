@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PointCalc } from "@/components/PointCalc";
 import { events, getEvent } from "@/lib/events";
@@ -19,7 +20,11 @@ export async function generateMetadata({ params }: PageProps<"/point-calc/[slug]
   return pageMeta(toolTitle(event.name), tool.description, `/point-calc/${event.slug}`);
 }
 
-export default async function PointCalcPage({ params }: PageProps<"/point-calc/[slug]">) {
+// params（URLのイベント名）は、この中で初めて読む。
+// ページ本体で先に待ってしまうと、共通の枠を先に出せなくなる（Next.js 16 の推奨）。
+async function PointCalcForSlug({
+  params,
+}: Pick<PageProps<"/point-calc/[slug]">, "params">) {
   const { slug } = await params;
   const event = getEvent(slug);
   if (!event) notFound(); // 無いイベントは「ページが見つかりません」にする
@@ -44,5 +49,19 @@ export default async function PointCalcPage({ params }: PageProps<"/point-calc/[
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <PointCalc event={event} />
     </>
+  );
+}
+
+export default function PointCalcPage({ params }: PageProps<"/point-calc/[slug]">) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto w-full max-w-2xl px-5 py-16 text-center text-sm text-notebook-muted">
+          読み込み中…
+        </div>
+      }
+    >
+      <PointCalcForSlug params={params} />
+    </Suspense>
   );
 }
