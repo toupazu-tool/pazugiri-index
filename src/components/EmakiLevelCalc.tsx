@@ -205,11 +205,11 @@ export function EmakiLevelCalc() {
                     </colgroup>
                     <thead>
                       <tr className="bg-brand-yellow text-white">
-                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight sm:px-1 sm:py-1.5 sm:text-xs">Lv</th>
-                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight whitespace-nowrap sm:px-1 sm:py-1.5 sm:text-xs">
+                        <th scope="col" className="border border-brand-yellow px-1 py-1.5 text-sm font-extrabold leading-tight sm:px-1.5 sm:py-2 sm:text-base">Lv</th>
+                        <th scope="col" className="border border-brand-yellow px-1 py-1.5 text-sm font-extrabold leading-tight whitespace-nowrap sm:px-1.5 sm:py-2 sm:text-base">
                           <abbr title="そのレベルになったときの累計経験値（Lv1は0）" className="cursor-help no-underline">レベル累計</abbr>
                         </th>
-                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight whitespace-nowrap sm:px-1 sm:py-1.5 sm:text-xs">
+                        <th scope="col" className="border border-brand-yellow px-1 py-1.5 text-sm font-extrabold leading-tight whitespace-nowrap sm:px-1.5 sm:py-2 sm:text-base">
                           <abbr title="そのレベルから次のレベルに上がるのに必要な経験値" className="cursor-help no-underline">必要経験値</abbr>
                         </th>
                       </tr>
@@ -223,12 +223,12 @@ export function EmakiLevelCalc() {
                             ref={isCurrent ? currentRowRef : undefined}
                             className={isCurrent ? "bg-[#fff2c4] font-bold ring-1 ring-inset ring-notebook-red" : "bg-white even:bg-[#fffbea]"}
                           >
-                            <th scope="row" className="border border-brand-yellow/50 px-0.5 py-0.5 text-[10px] leading-tight font-extrabold sm:py-1 sm:text-sm">
+                            <th scope="row" className="border border-brand-yellow/50 px-1 py-1 text-sm leading-tight font-extrabold sm:px-1.5 sm:py-1.5 sm:text-base">
                               {row.level}
-                              {isCurrent && <span className="mt-0.5 block text-[0.55rem] font-bold text-notebook-red sm:text-[0.65rem]">いま</span>}
+                              {isCurrent && <span className="mt-0.5 block text-[11px] font-bold text-notebook-red sm:text-xs">いま</span>}
                             </th>
-                            <td className="border border-brand-yellow/50 px-0.5 py-0.5 text-[10px] leading-tight whitespace-nowrap sm:py-1 sm:text-sm">{row.levelCumulative.toLocaleString()}</td>
-                            <td className="border border-brand-yellow/50 px-0.5 py-0.5 text-[10px] leading-tight whitespace-nowrap sm:py-1 sm:text-sm">{row.need.toLocaleString()}</td>
+                            <td className="border border-brand-yellow/50 px-1 py-1 text-sm leading-tight whitespace-nowrap sm:px-1.5 sm:py-1.5 sm:text-base">{row.levelCumulative.toLocaleString()}</td>
+                            <td className="border border-brand-yellow/50 px-1 py-1 text-sm leading-tight whitespace-nowrap sm:px-1.5 sm:py-1.5 sm:text-base">{row.need.toLocaleString()}</td>
                           </tr>
                         );
                       })}
