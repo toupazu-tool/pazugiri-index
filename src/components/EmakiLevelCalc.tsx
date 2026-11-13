@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { sendGAEvent } from "@next/third-parties/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -72,14 +73,18 @@ export function EmakiLevelCalc() {
 
   useEffect(() => {
     if (!loaded) return;
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        lv: level === "" ? "" : String(level),
-        xp: xp === "" ? "" : String(xp),
-        target: target === "" ? "" : String(target),
-      }),
-    );
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          lv: level === "" ? "" : String(level),
+          xp: xp === "" ? "" : String(xp),
+          target: target === "" ? "" : String(target),
+        }),
+      );
+    } catch {
+      // プライベートモードなどで保存できないときは、入力の復元を諦める
+    }
   }, [loaded, level, xp, target]);
 
   const currentLevel = typeof level === "number" ? level : null;
@@ -133,7 +138,7 @@ export function EmakiLevelCalc() {
       <main className="mx-auto w-full max-w-2xl space-y-5 px-5 pb-8 text-sm leading-relaxed">
         <div className="px-1 pt-6 pb-1">
           <h1 className="mt-2 flex flex-col items-center justify-center gap-2 text-center text-2xl leading-relaxed font-extrabold sm:flex-row sm:gap-3">
-            <img src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" />
+            <Image src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" unoptimized />
             <span>絵巻守Lv<br className="sm:hidden" /> 経験値計算</span>
           </h1>
           <p className="mt-3 text-center text-xs text-notebook-muted">入力内容は、お使いの端末のブラウザにだけ保存されます。</p>
