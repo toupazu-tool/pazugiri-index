@@ -19,6 +19,12 @@ export const tool = {
     "刀剣乱舞ぱずぎりのイベント交換所で欲しい報酬を選ぶと、必要なポイントと1日あたりのノルマが分かる非公式ツールです。",
 };
 
+export const emakiTool = {
+  title: "絵巻守Lv 経験値計算",
+  description:
+    "刀剣乱舞ぱずぎりの絵巻守レベルについて、今の経験値から次のレベルや目標レベルまでの残りが分かる非公式ツールです。",
+};
+
 // イベントごとの計算ツールのタイトル。イベント名はイベントデータから自動で入る
 export function toolTitle(eventName: string) {
   return `ぱずぎり ${eventName} イベントノルマ計算ツール｜${site.name}`;
