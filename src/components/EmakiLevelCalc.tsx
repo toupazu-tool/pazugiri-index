@@ -168,7 +168,7 @@ export function EmakiLevelCalc() {
             <Image src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" unoptimized />
             <span className="flex flex-col items-center leading-snug">
               <span>ぱずぎり 絵巻守Lv早見表</span>
-              <span className="text-base font-bold text-notebook-muted sm:text-lg">経験値計算ツール</span>
+              <span>経験値計算ツール</span>
             </span>
           </h1>
         </div>
