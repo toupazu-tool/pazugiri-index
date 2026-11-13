@@ -123,7 +123,7 @@ export function EmakiLevelCalc() {
   const shareUrl = `${site.url}/emaki-level${params.size ? `?${params}` : ""}`;
   const shareLines = valid && currentLevel !== null && currentXp !== null && remainNext !== null
     ? [
-        "ぱずぎり 絵巻守Lv早見表",
+        "ぱずぎり 絵巻守Lv早見表 | 経験値計算ツール",
         `今のLv：${currentLevel}`,
         `今の経験値：${currentXp.toLocaleString()}`,
         `次のLvまで：${remainNext.toLocaleString()}`,
