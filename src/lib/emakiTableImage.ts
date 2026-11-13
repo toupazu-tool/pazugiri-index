@@ -1,7 +1,7 @@
 import type { LevelTableRow } from "@/lib/emakiLevel";
 
 /** 画像のタイトル（ページ名） */
-export const TABLE_IMAGE_TITLE = "絵巻守Lv 経験値表";
+export const TABLE_IMAGE_TITLE = "絵巻守Lv早見表";
 
 /** 画像フッターに小さく入れるサイトURL */
 export const TABLE_IMAGE_FOOTER = "www.pazugiri-index.com";

@@ -49,7 +49,7 @@ describe("getTableImageSize", () => {
     expect(layout.rowsPerColumn).toBe(25);
     expect(size.width).toBe(1200);
     expect(size.height).toBeGreaterThan(900);
-    expect(TABLE_IMAGE_TITLE).toBe("絵巻守Lv 経験値表");
+    expect(TABLE_IMAGE_TITLE).toBe("絵巻守Lv早見表");
     expect(TABLE_IMAGE_FOOTER).toBe("www.pazugiri-index.com");
   });
 });

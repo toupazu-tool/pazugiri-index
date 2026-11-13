@@ -123,7 +123,7 @@ export function EmakiLevelCalc() {
   const shareUrl = `${site.url}/emaki-level${params.size ? `?${params}` : ""}`;
   const shareLines = valid && currentLevel !== null && currentXp !== null && remainNext !== null
     ? [
-        "ぱずぎり 絵巻守Lv",
+        "ぱずぎり 絵巻守Lv早見表",
         `今のLv：${currentLevel}`,
         `今の経験値：${currentXp.toLocaleString()}`,
         `次のLvまで：${remainNext.toLocaleString()}`,
@@ -166,7 +166,10 @@ export function EmakiLevelCalc() {
         <div className="px-1 pt-6 pb-1">
           <h1 className="mt-2 flex flex-col items-center justify-center gap-2 text-center text-2xl leading-relaxed font-extrabold sm:flex-row sm:gap-3">
             <Image src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" unoptimized />
-            <span>絵巻守Lv<br className="sm:hidden" /> 経験値計算</span>
+            <span className="flex flex-col items-center leading-snug">
+              <span>絵巻守Lv早見表</span>
+              <span className="text-base font-bold text-notebook-muted sm:text-lg">経験値計算ツール</span>
+            </span>
           </h1>
         </div>
 
@@ -315,7 +318,7 @@ export function EmakiLevelCalc() {
                   className="min-h-14 w-full min-w-0 bg-transparent text-2xl font-bold outline-none"
                 />
               </div>
-              <p className="mt-2 text-xs text-notebook-muted">ゲーム画面の「現在値/次の値」の、左側の数字を入れてください。</p>
+              <p className="mt-2 text-xs text-notebook-muted">絵巻守証経験値バー右下の「現在値/累計経験値」の左側の数字を入力してください。</p>
             </div>
 
             <div>

@@ -20,7 +20,7 @@ export const tool = {
 };
 
 export const emakiTool = {
-  title: "絵巻守Lv 経験値計算",
+  title: "絵巻守Lv早見表 | 経験値計算ツール",
   description:
     "刀剣乱舞ぱずぎりの絵巻守レベルについて、今の経験値から次のレベルや目標レベルまでの残りが分かる非公式ツールです。",
 };

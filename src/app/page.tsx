@@ -41,7 +41,7 @@ export default function Home() {
         <section className={cardClass}>
           <h2 className="flex items-center gap-3 text-xl font-extrabold">
             <img src="/to-top.svg" alt="" className="h-10 w-auto" />
-            絵巻守Lv 経験値計算
+            絵巻守Lv早見表 | 経験値計算ツール
           </h2>
           <p className="mt-3">今の絵巻守Lvと経験値を入れると、次のレベルや目標レベルまでの残りが分かります。</p>
           <Link
