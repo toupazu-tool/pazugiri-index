@@ -11,7 +11,7 @@ export const TABLE_IMAGE_SITE_NAME = "ぱずぎり目録";
 export const TABLE_IMAGE_COLUMNS = 2;
 
 /** 1倍サイズ。実際のPNGはこれの2倍で描いて、きれいに見せる */
-export const TABLE_IMAGE_WIDTH = 1200;
+export const TABLE_IMAGE_WIDTH = 880;
 export const TABLE_IMAGE_SCALE = 2;
 
 export const TABLE_IMAGE_COLORS = {
@@ -55,6 +55,9 @@ export type TableImageLayout = {
   titleToSite: number;
   siteToTable: number;
   tableToFooter: number;
+  headerSize: number;
+  cellSize: number;
+  badgeSize: number;
   rowsPerColumn: number;
   columnCount: number;
   tableTop: number;
@@ -99,18 +102,21 @@ export function getTableImageLayout(
 ): TableImageLayout {
   const columns = Math.max(1, columnCount);
   const rowsPerColumn = Math.max(1, Math.ceil(rowCount / columns));
-  const padX = 48;
-  const padTop = 40;
-  const padBottom = 32;
-  const titleSize = 44;
-  const siteNameSize = 20;
-  const footerSize = 18;
-  const headerH = 40;
-  const rowH = 32;
-  const colGap = 24;
+  const padX = 36;
+  const padTop = 36;
+  const padBottom = 28;
+  const titleSize = 48;
+  const siteNameSize = 24;
+  const footerSize = 22;
+  const headerH = 48;
+  const rowH = 46;
+  const colGap = 16;
   const titleToSite = 10;
-  const siteToTable = 28;
-  const tableToFooter = 22;
+  const siteToTable = 24;
+  const tableToFooter = 20;
+  const headerSize = 22;
+  const cellSize = 26;
+  const badgeSize = 16;
   const tableHeight = headerH + rowsPerColumn * rowH;
   const tableTop = padTop + titleSize + titleToSite + siteNameSize + siteToTable;
   const height = tableTop + tableHeight + tableToFooter + footerSize + padBottom;
@@ -129,6 +135,9 @@ export function getTableImageLayout(
     titleToSite,
     siteToTable,
     tableToFooter,
+    headerSize,
+    cellSize,
+    badgeSize,
     rowsPerColumn,
     columnCount: columns,
     tableTop,
@@ -253,23 +262,25 @@ function drawOneTable(
 ) {
   const { x, y, width, rows, layout, fontFamily, highlightLevel } = args;
   const colors = TABLE_IMAGE_COLORS;
-  const colLv = Math.round(width * 0.2);
+  // Lv列は数字が収まる幅に抑え、余った分をレベル累計と必要経験値へ回す
+  const colLv = Math.round(width * 0.22);
   const colNeed = Math.round(width * 0.36);
   const colCum = width - colLv - colNeed;
   const headers = TABLE_IMAGE_HEADERS;
   const colWidths = [colLv, colCum, colNeed];
 
+  const tableH = layout.headerH + rows.length * layout.rowH;
+  // 画面の表と同じ色。外枠・見出しは brand-yellow、本文の罫線は 50%
+  const gridSoft = "rgba(242, 182, 50, 0.5)";
+
   // ヘッダー
   ctx.fillStyle = colors.yellow;
   ctx.fillRect(x, y, width, layout.headerH);
-  ctx.strokeStyle = colors.yellow;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x + 1, y + 1, width - 2, layout.headerH + rows.length * layout.rowH - 2);
 
   ctx.fillStyle = colors.headerText;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `800 16px ${fontFamily}`;
+  ctx.font = `800 ${layout.headerSize}px ${fontFamily}`;
   let headerX = x;
   headers.forEach((label, i) => {
     ctx.fillText(label, headerX + colWidths[i] / 2, y + layout.headerH / 2);
@@ -282,12 +293,6 @@ function drawOneTable(
     ctx.fillStyle = isHighlight ? colors.highlight : rowIndex % 2 === 0 ? colors.rowOdd : colors.rowEven;
     ctx.fillRect(x, rowY, width, layout.rowH);
 
-    if (isHighlight) {
-      ctx.strokeStyle = colors.red;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x + 1.5, rowY + 1.5, width - 3, layout.rowH - 3);
-    }
-
     const values = [String(row.level), formatInt(row.levelCumulative), formatInt(row.need)];
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -295,42 +300,63 @@ function drawOneTable(
     values.forEach((value, i) => {
       if (i === 0) {
         ctx.fillStyle = isHighlight ? colors.red : colors.text;
-        ctx.font = `800 16px ${fontFamily}`;
-        if (isHighlight) {
-          // 数字を少し左に寄せて、右に「いまここ」の印を置く
-          ctx.fillText(value, cellX + colWidths[i] / 2 - 18, rowY + layout.rowH / 2);
-          const badgeW = 44;
-          const badgeH = 16;
-          const badgeX = cellX + colWidths[i] - badgeW - 6;
-          const badgeY = rowY + (layout.rowH - badgeH) / 2;
-          ctx.fillStyle = colors.red;
-          roundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 8);
-          ctx.fill();
-          ctx.fillStyle = colors.headerText;
-          ctx.font = `800 10px ${fontFamily}`;
-          ctx.fillText("いまここ", badgeX + badgeW / 2, badgeY + badgeH / 2 + 0.5);
-        } else {
-          ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
-        }
+        ctx.font = `800 ${layout.cellSize}px ${fontFamily}`;
+        // 保存画像は列を狭めるため「いまここ」バッジは置かず、行の色と赤枠だけで示す
+        ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
       } else {
         ctx.fillStyle = colors.text;
-        ctx.font = `${isHighlight ? "800" : "700"} 16px ${fontFamily}`;
+        ctx.font = `${isHighlight ? "800" : "700"} ${layout.cellSize}px ${fontFamily}`;
         ctx.fillText(value, cellX + colWidths[i] / 2, rowY + layout.rowH / 2);
       }
       cellX += colWidths[i];
     });
   });
 
-  // 列の薄い区切り
-  ctx.strokeStyle = "rgba(242, 182, 50, 0.45)";
+  // 画面の表と同じく、行・列のセル罫線を引く
   ctx.lineWidth = 1;
+  ctx.strokeStyle = gridSoft;
+  for (let r = 1; r < rows.length; r++) {
+    const lineY = y + layout.headerH + r * layout.rowH + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, lineY);
+    ctx.lineTo(x + width, lineY);
+    ctx.stroke();
+  }
   let gridX = x + colLv;
   for (let i = 0; i < 2; i++) {
     ctx.beginPath();
-    ctx.moveTo(gridX, y);
-    ctx.lineTo(gridX, y + layout.headerH + rows.length * layout.rowH);
+    ctx.moveTo(gridX + 0.5, y + layout.headerH);
+    ctx.lineTo(gridX + 0.5, y + tableH);
     ctx.stroke();
     gridX += i === 0 ? colCum : colNeed;
+  }
+
+  ctx.strokeStyle = colors.yellow;
+  ctx.beginPath();
+  ctx.moveTo(x, y + layout.headerH + 0.5);
+  ctx.lineTo(x + width, y + layout.headerH + 0.5);
+  ctx.stroke();
+  gridX = x + colLv;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(gridX + 0.5, y);
+    ctx.lineTo(gridX + 0.5, y + layout.headerH);
+    ctx.stroke();
+    gridX += i === 0 ? colCum : colNeed;
+  }
+
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + 1, y + 1, width - 2, tableH - 2);
+
+  // 強調の赤枠は罫線の上に描く
+  if (typeof highlightLevel === "number") {
+    const rowIndex = rows.findIndex((row) => row.level === highlightLevel);
+    if (rowIndex >= 0) {
+      const rowY = y + layout.headerH + rowIndex * layout.rowH;
+      ctx.strokeStyle = colors.red;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 1.5, rowY + 1.5, width - 3, layout.rowH - 3);
+    }
   }
 }
 

@@ -48,8 +48,14 @@ describe("getTableImageSize", () => {
     const layout = getTableImageLayout(50, TABLE_IMAGE_COLUMNS);
     expect(size).toEqual({ width: TABLE_IMAGE_WIDTH, height: layout.height });
     expect(layout.rowsPerColumn).toBe(25);
-    expect(size.width).toBe(1200);
-    expect(size.height).toBeGreaterThan(900);
+    expect(size.width).toBe(880);
+    expect(layout.titleSize).toBe(48);
+    expect(layout.siteNameSize).toBe(24);
+    expect(layout.footerSize).toBe(22);
+    expect(layout.headerSize).toBe(22);
+    expect(layout.cellSize).toBe(26);
+    expect(layout.badgeSize).toBe(16);
+    expect(size.height).toBeGreaterThan(1200);
     expect(TABLE_IMAGE_TITLE).toBe("絵巻守Lv早見表");
     expect(TABLE_IMAGE_FOOTER).toBe("www.pazugiri-index.com");
     expect(TABLE_IMAGE_HEADERS).toEqual(["Lv", "レベル累計", "必要経験値"]);
