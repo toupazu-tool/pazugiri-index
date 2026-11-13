@@ -412,19 +412,19 @@ export function EmakiLevelCalc() {
               )}
             </div>
           )}
-          <div className="mt-5 text-center">
-            <a
-              href="#emaki-table"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById("emaki-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-yellow bg-[#fff6d9] px-5 text-sm font-bold text-[#7a5a00] hover:bg-brand-yellow hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
-            >
-              ↑ 経験値表を見る
-            </a>
-          </div>
         </section>
+        <div className="text-center">
+          <a
+            href="#emaki-table"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("emaki-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brand-blue bg-white px-5 text-sm font-bold text-brand-blue hover:bg-brand-blue hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+          >
+            ↑ 経験値表を見る
+          </a>
+        </div>
 
         {valid && fullShareText && (
           <section className="px-1 py-2">
