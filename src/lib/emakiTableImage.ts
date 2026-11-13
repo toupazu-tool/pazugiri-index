@@ -77,17 +77,6 @@ export function tableImageFilename(highlightLevel?: number | null): string {
   return "emaki-level-table.png";
 }
 
-export function buildTableShareText(options: {
-  shareUrl: string;
-  level?: number | null;
-}): string {
-  const lines = ["ぱずぎり 絵巻守Lv 経験値表"];
-  if (typeof options.level === "number") {
-    lines.push(`今のLv：${options.level}`);
-  }
-  lines.push("▼表を見る", options.shareUrl);
-  return lines.join("\n");
-}
 
 export function canShareFiles(files: File[]): boolean {
   return typeof navigator !== "undefined"
@@ -401,29 +390,3 @@ export async function savePngBlob(blob: Blob, filename: string): Promise<"shared
   return "downloaded";
 }
 
-/** 対応端末は画像つき共有。非対応なら保存して、呼び出し側でXを開く */
-export async function sharePngOrSave(
-  blob: Blob,
-  filename: string,
-  text: string,
-  url: string,
-): Promise<"shared" | "fallback"> {
-  const file = new File([blob], filename, { type: "image/png" });
-  if (canShareFiles([file])) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: TABLE_IMAGE_TITLE,
-        text,
-        url,
-      });
-      return "shared";
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return "shared";
-      }
-    }
-  }
-  downloadBlob(blob, filename);
-  return "fallback";
-}

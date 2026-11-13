@@ -17,11 +17,8 @@ import {
   validateCurrentXp,
 } from "@/lib/emakiLevel";
 import {
-  buildTableShareText,
-  canShareFiles,
   renderEmakiTablePngBlob,
   savePngBlob,
-  sharePngOrSave,
   splitTableColumns,
   tableImageFilename,
 } from "@/lib/emakiTableImage";
@@ -29,7 +26,6 @@ import {
 const STORAGE_KEY = "toupazu-emaki-level";
 const TABLE_ROWS = levelTable(CONFIRMED_MAX_LEVEL);
 const TABLE_COLUMNS = splitTableColumns(TABLE_ROWS, 2);
-const SHARE_IMAGE_HINT = "画像を保存しました。Xの投稿画面で画像を添付してね";
 
 function clampLevel(value: number): number {
   return Math.min(CONFIRMED_MAX_LEVEL, Math.max(1, Math.floor(value)));
@@ -138,10 +134,6 @@ export function EmakiLevelCalc() {
     : [];
   const fullShareText = shareLines.length > 0 ? `${shareLines.join("\n")}\n▼計算する\n${shareUrl}` : "";
   const hasLevel = currentLevel !== null;
-  const tableShareUrl = currentLevel !== null
-    ? `${site.url}/emaki-level?lv=${currentLevel}`
-    : `${site.url}/emaki-level`;
-  const tableShareText = buildTableShareText({ shareUrl: tableShareUrl, level: currentLevel });
 
   const makeTableImage = (highlight: boolean) =>
     renderEmakiTablePngBlob({
@@ -166,39 +158,6 @@ export function EmakiLevelCalc() {
     }
   };
 
-  const handleShareTableImage = async () => {
-    if (imageBusy) return;
-    setImageBusy(true);
-    setImageHint("");
-    // 画像つき共有ができる端末では、先に空のタブを開かない
-    const probe = new File([new Uint8Array()], "probe.png", { type: "image/png" });
-    // PCなど非対応のとき、あとでXを開くための窓を先に作る（ポップアップブロック対策）
-    const preview = canShareFiles([probe]) ? null : window.open("about:blank", "_blank");
-    if (preview) preview.opener = null;
-    try {
-      const blob = await makeTableImage(hasLevel);
-      const filename = tableImageFilename(hasLevel ? currentLevel : null);
-      const result = await sharePngOrSave(blob, filename, tableShareText, tableShareUrl);
-      sendGAEvent("event", "share", { method: "image_share" });
-      if (result === "fallback") {
-        const intent = `https://x.com/intent/post?text=${encodeURIComponent(tableShareText)}`;
-        if (preview && !preview.closed) {
-          preview.location.href = intent;
-        } else {
-          window.open(intent, "_blank", "noopener,noreferrer");
-        }
-        setImageHint(SHARE_IMAGE_HINT);
-      } else if (preview && !preview.closed) {
-        preview.close();
-      }
-    } catch {
-      if (preview && !preview.closed) preview.close();
-      setImageHint("画像を作れませんでした。もう一度試してみてください。");
-    } finally {
-      setImageBusy(false);
-    }
-  };
-
   return (
     <>
       <SiteHeader />
@@ -216,16 +175,23 @@ export function EmakiLevelCalc() {
             <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-yellow text-xs font-bold text-white">01</span>
             <h2 id="emaki-table" className="scroll-mt-5 text-base font-extrabold">Lv1〜{CONFIRMED_MAX_LEVEL}の経験値表</h2>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+          <p className="mb-2 text-center text-xs font-bold text-notebook-muted sm:hidden">
+            ← 表は横にスクロールできます →
+          </p>
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label="絵巻守レベルの経験値表（横にスクロールできます）"
+            className="min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] focus-visible:outline-2 focus-visible:outline-brand-blue"
+          >
+          <div className="grid min-w-[24rem] grid-cols-2 gap-1.5 sm:min-w-0 sm:gap-3">
             {TABLE_COLUMNS.map((columnRows, columnIndex) => {
               const first = columnRows[0]?.level;
               const last = columnRows[columnRows.length - 1]?.level;
               return (
                 <div
                   key={columnIndex}
-                  role="region"
-                  aria-label={`絵巻守レベルの経験値表（Lv${first}〜${last}）`}
-                  className="min-w-0 overflow-hidden focus-visible:outline-2 focus-visible:outline-brand-blue"
+                  className="min-w-0"
                 >
                   <table className="w-full table-fixed border-collapse border-2 border-brand-yellow text-center tabular-nums">
                     <caption className="sr-only">Lv{first}〜{last}</caption>
@@ -269,6 +235,7 @@ export function EmakiLevelCalc() {
               );
             })}
           </div>
+          </div>
 
           <div className="mt-4 space-y-2">
             <h3 className="text-center text-sm font-extrabold">表の画像</h3>
@@ -293,14 +260,6 @@ export function EmakiLevelCalc() {
             {!hasLevel && (
               <p className="text-center text-xs text-notebook-muted">今のLvを入れると、強調した表も保存できます。</p>
             )}
-            <button
-              type="button"
-              onClick={() => { void handleShareTableImage(); }}
-              disabled={imageBusy}
-              className="flex min-h-12 w-full items-center justify-center rounded-xl bg-[#3d3b37] px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-50"
-            >
-              画像つきでシェア
-            </button>
             {imageHint && (
               <p role="status" className="rounded-sm border border-brand-yellow bg-[#fff6d9] px-3 py-2 text-center text-xs font-bold text-[#7a5a00]">
                 {imageHint}

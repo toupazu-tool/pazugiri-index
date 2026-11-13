@@ -4,7 +4,6 @@ import {
   TABLE_IMAGE_FOOTER,
   TABLE_IMAGE_TITLE,
   TABLE_IMAGE_WIDTH,
-  buildTableShareText,
   getTableImageLayout,
   getTableImageSize,
   splitTableColumns,
@@ -41,22 +40,6 @@ describe("tableImageFilename", () => {
   });
 });
 
-describe("buildTableShareText", () => {
-  it("タイトルとURLを含む", () => {
-    const text = buildTableShareText({ shareUrl: "https://www.pazugiri-index.com/emaki-level" });
-    expect(text).toContain("ぱずぎり 絵巻守Lv 経験値表");
-    expect(text).toContain("https://www.pazugiri-index.com/emaki-level");
-    expect(text).not.toContain("今のLv");
-  });
-
-  it("今のLvがあるときは文章に入れる", () => {
-    const text = buildTableShareText({
-      shareUrl: "https://www.pazugiri-index.com/emaki-level?lv=24",
-      level: 24,
-    });
-    expect(text).toContain("今のLv：24");
-  });
-});
 
 describe("getTableImageSize", () => {
   it("2列の50行表が決まった大きさになる", () => {
