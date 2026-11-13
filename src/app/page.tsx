@@ -37,6 +37,20 @@ export default function Home() {
             <Link href="/point-calc" className="text-notebook-green underline underline-offset-4">ほかのイベントを見る</Link>
           </p>
         </section>
+
+        <section className={cardClass}>
+          <h2 className="flex items-center gap-3 text-xl font-extrabold">
+            <img src="/to-top.svg" alt="" className="h-10 w-auto" />
+            絵巻守Lv早見表 | 経験値計算ツール
+          </h2>
+          <p className="mt-3">今の絵巻守Lvと経験値を入れると、次のレベルや目標レベルまでの残りが分かります。</p>
+          <Link
+            href="/emaki-level"
+            className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-notebook-green px-4 py-2 text-center text-base font-bold text-white shadow-md transition hover:opacity-90"
+          >
+            絵巻守Lvを計算する
+          </Link>
+        </section>
       </main>
 
       <SiteFooter />

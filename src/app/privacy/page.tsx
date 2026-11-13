@@ -35,7 +35,7 @@ export default function PrivacyPage() {
 
           <Item title="1. 入力内容の保存について">
             <p>
-              ノルマ計算ツールに入力した内容（所持ポイント、欲しい報酬の数、プレイする日）は、お使いの端末のブラウザ（localStorage）にだけ保存されます。当サイトのサーバーには送られず、運営者が見ることもできません。
+              ノルマ計算ツールに入力した内容（所持ポイント、欲しい報酬の数、プレイする日）や、絵巻守Lv早見表に入力した内容（今のレベル、今の経験値、目標レベル）は、お使いの端末のブラウザ（localStorage）にだけ保存されます。当サイトのサーバーには送られず、運営者が見ることもできません。
             </p>
             <p>ブラウザの閲覧データを消すと、保存した内容も消えます。</p>
           </Item>
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
             <p>このポリシーは、必要に応じて内容を変えることがあります。</p>
           </Item>
 
-          <p className="text-right text-notebook-muted">制定日：2026年11月8日</p>
+          <p className="text-right text-notebook-muted">制定日：2026年11月8日<br />改定日：2026年11月13日</p>
         </article>
       </main>
 
