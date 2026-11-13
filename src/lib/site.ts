@@ -25,6 +25,14 @@ export const emakiTool = {
     "刀剣乱舞ぱずぎりの絵巻守レベルについて、今の経験値から次のレベルや目標レベルまでの残りが分かる非公式ツールです。",
 };
 
+/** 専用画像がないページが使う、サイト全体の共有カード（1200×630） */
+export const defaultOgImage = {
+  url: "/opengraph-image",
+  width: 1200,
+  height: 630,
+  type: "image/png" as const,
+};
+
 // イベントごとの計算ツールのタイトル。イベント名はイベントデータから自動で入る
 export function toolTitle(eventName: string) {
   return `ぱずぎり ${eventName} イベントノルマ計算ツール｜${site.name}`;
@@ -37,6 +45,7 @@ export function pageMeta(title: string, description: string, path: string): Meta
     title,
     description,
     alternates: { canonical: path },
+    // images はここには書かない。書くと各ページの opengraph-image を上書きしてしまう
     openGraph: { title, description, url: path, siteName: site.name, locale: "ja_JP", type: "website" },
     twitter: { card: "summary_large_image" },
   };

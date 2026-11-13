@@ -3,12 +3,14 @@ import Image from "next/image";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/Button";
-import { site } from "@/lib/site";
+import { defaultOgImage, site } from "@/lib/site";
 
 // 404ページ専用の title。検索には載せない
 export const metadata: Metadata = {
   title: `ページが見つかりません｜${site.name}`,
   robots: { index: false, follow: false },
+  openGraph: { images: [defaultOgImage] },
+  twitter: { card: "summary_large_image", images: [defaultOgImage.url] },
 };
 
 // 存在しないURLを開いたときのページ

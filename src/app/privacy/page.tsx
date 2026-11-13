@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { site } from "@/lib/site";
+import { defaultOgImage, site } from "@/lib/site";
 
 // このページ専用の title や説明文（layout.tsx の設定を上書きする）
 export const metadata: Metadata = {
   title: `プライバシーポリシー｜${site.name}`,
   description: `${site.name}での入力内容の保存方法やアクセス解析について説明しています。`,
   alternates: { canonical: "/privacy" },
-  openGraph: { url: "/privacy" },
+  openGraph: { url: "/privacy", images: [defaultOgImage] },
+  twitter: { card: "summary_large_image", images: [defaultOgImage.url] },
 };
 
 // 見出しと本文の組み合わせ（同じ形を何度も使うので部品にする）

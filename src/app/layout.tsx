@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
-import { pageMeta, site } from "@/lib/site";
+import { defaultOgImage, pageMeta, site } from "@/lib/site";
 import "./globals.css";
 
 // 丸ゴシック体のフォントを読み込む
@@ -13,9 +13,19 @@ const rounded = M_PLUS_Rounded_1c({
 });
 
 // サイト全体の基本の title や meta タグ（各ページで上書きできる）
+// 共有カード画像の初期値。各ツールページの opengraph-image があればそちらが使われる
+const rootMeta = pageMeta(`${site.name}｜${site.tagline}`, site.description, "/");
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  ...pageMeta(`${site.name}｜${site.tagline}`, site.description, "/"),
+  ...rootMeta,
+  openGraph: {
+    ...rootMeta.openGraph,
+    images: [defaultOgImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [defaultOgImage.url],
+  },
 };
 
 // 検索エンジンやAI検索向けに「このサイトの名前」を伝える情報（構造化データ）
