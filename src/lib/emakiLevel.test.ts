@@ -9,6 +9,7 @@ import {
   remainingToTarget,
   isPredictedLevel,
   CONFIRMED_MAX_LEVEL,
+  levelTable,
 } from "./emakiLevel";
 
 // ゲーム画面のスクショから取った「次のレベルへの累計」
@@ -102,5 +103,23 @@ describe("isPredictedLevel", () => {
   it("Lv50までは確認済み、51以上は予測", () => {
     expect(isPredictedLevel(CONFIRMED_MAX_LEVEL)).toBe(false);
     expect(isPredictedLevel(CONFIRMED_MAX_LEVEL + 1)).toBe(true);
+  });
+});
+
+describe("levelTable", () => {
+  it("レベル累計はそのレベルになったときの累計で、必要経験値は次のLvまでの必要量", () => {
+    const rows = levelTable(CONFIRMED_MAX_LEVEL);
+    expect(rows).toHaveLength(CONFIRMED_MAX_LEVEL);
+    expect(rows[0]).toMatchObject({ level: 1, levelCumulative: 0, need: 105 });
+    expect(rows[1]).toMatchObject({ level: 2, levelCumulative: 105, need: 469 });
+    expect(rows[2]).toMatchObject({ level: 3, levelCumulative: 574, need: 975 });
+    const last = rows[CONFIRMED_MAX_LEVEL - 1];
+    expect(last).toMatchObject({
+      level: 50,
+      levelCumulative: 1_568_474,
+      need: 94_641,
+    });
+    expect(last.levelCumulative).toBe(cumulativeToNext(49));
+    expect(last.need).toBe(needAtLevel(50));
   });
 });

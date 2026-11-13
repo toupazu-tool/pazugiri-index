@@ -121,18 +121,19 @@ export function remainingToTarget(currentXp: number, targetLevel: number): numbe
 
 export type LevelTableRow = {
   level: number;
-  cumulativeToNext: number;
+  /** そのレベルになったときの累計経験値。Lv1 は 0、Lv L は T(L-1) */
+  levelCumulative: number;
   need: number;
   measured: boolean;
 };
 
-/** Lv1〜max までの一覧表用データ */
+/** Lv1〜max までの一覧表用データ（レベル累計はそのレベルになったときの累計） */
 export function levelTable(maxLevel: number = CONFIRMED_MAX_LEVEL): LevelTableRow[] {
   const rows: LevelTableRow[] = [];
   for (let level = 1; level <= maxLevel; level++) {
     rows.push({
       level,
-      cumulativeToNext: cumulativeToNext(level),
+      levelCumulative: levelStartXp(level),
       need: needAtLevel(level),
       measured: MEASURED_LEVELS.has(level),
     });

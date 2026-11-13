@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   TABLE_IMAGE_COLUMNS,
   TABLE_IMAGE_FOOTER,
+  TABLE_IMAGE_HEADERS,
   TABLE_IMAGE_TITLE,
   TABLE_IMAGE_WIDTH,
   getTableImageLayout,
@@ -51,5 +52,6 @@ describe("getTableImageSize", () => {
     expect(size.height).toBeGreaterThan(900);
     expect(TABLE_IMAGE_TITLE).toBe("絵巻守Lv早見表");
     expect(TABLE_IMAGE_FOOTER).toBe("www.pazugiri-index.com");
+    expect(TABLE_IMAGE_HEADERS).toEqual(["Lv", "レベル累計", "必要経験値"]);
   });
 });

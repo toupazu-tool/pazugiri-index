@@ -29,7 +29,9 @@ export const TABLE_IMAGE_COLORS = {
   shadow: "rgba(90, 70, 48, 0.18)",
 } as const;
 
-export type EmakiTableImageRow = Pick<LevelTableRow, "level" | "cumulativeToNext" | "need">;
+export const TABLE_IMAGE_HEADERS = ["Lv", "レベル累計", "必要経験値"] as const;
+
+export type EmakiTableImageRow = Pick<LevelTableRow, "level" | "levelCumulative" | "need">;
 
 export type EmakiTableImageOptions = {
   rows: readonly EmakiTableImageRow[];
@@ -252,9 +254,9 @@ function drawOneTable(
   const { x, y, width, rows, layout, fontFamily, highlightLevel } = args;
   const colors = TABLE_IMAGE_COLORS;
   const colLv = Math.round(width * 0.2);
-  const colNeed = Math.round(width * 0.32);
+  const colNeed = Math.round(width * 0.36);
   const colCum = width - colLv - colNeed;
-  const headers = ["Lv", "次の累計", "必要"];
+  const headers = TABLE_IMAGE_HEADERS;
   const colWidths = [colLv, colCum, colNeed];
 
   // ヘッダー
@@ -286,7 +288,7 @@ function drawOneTable(
       ctx.strokeRect(x + 1.5, rowY + 1.5, width - 3, layout.rowH - 3);
     }
 
-    const values = [String(row.level), formatInt(row.cumulativeToNext), formatInt(row.need)];
+    const values = [String(row.level), formatInt(row.levelCumulative), formatInt(row.need)];
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     let cellX = x;

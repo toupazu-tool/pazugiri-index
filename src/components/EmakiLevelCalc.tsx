@@ -187,7 +187,7 @@ export function EmakiLevelCalc() {
             aria-label="絵巻守レベルの経験値表（横にスクロールできます）"
             className="min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] focus-visible:outline-2 focus-visible:outline-brand-blue"
           >
-          <div className="grid min-w-[24rem] grid-cols-2 gap-1.5 sm:min-w-0 sm:gap-3">
+          <div className="grid min-w-[26rem] grid-cols-2 gap-1.5 sm:min-w-0 sm:gap-3">
             {TABLE_COLUMNS.map((columnRows, columnIndex) => {
               const first = columnRows[0]?.level;
               const last = columnRows[columnRows.length - 1]?.level;
@@ -199,18 +199,18 @@ export function EmakiLevelCalc() {
                   <table className="w-full table-fixed border-collapse border-2 border-brand-yellow text-center tabular-nums">
                     <caption className="sr-only">Lv{first}〜{last}</caption>
                     <colgroup>
-                      <col className="w-[22%]" />
-                      <col className="w-[46%]" />
-                      <col className="w-[32%]" />
+                      <col className="w-[16%]" />
+                      <col className="w-[42%]" />
+                      <col className="w-[42%]" />
                     </colgroup>
                     <thead>
                       <tr className="bg-brand-yellow text-white">
                         <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight sm:px-1 sm:py-1.5 sm:text-xs">Lv</th>
-                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight sm:px-1 sm:py-1.5 sm:text-xs">
-                          <abbr title="次のレベルへの累計" className="cursor-help no-underline">次の累計</abbr>
+                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight whitespace-nowrap sm:px-1 sm:py-1.5 sm:text-xs">
+                          <abbr title="そのレベルになったときの累計経験値（Lv1は0）" className="cursor-help no-underline">レベル累計</abbr>
                         </th>
-                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight sm:px-1 sm:py-1.5 sm:text-xs">
-                          <abbr title="必要経験値" className="cursor-help no-underline">必要</abbr>
+                        <th scope="col" className="border border-brand-yellow px-0.5 py-1 text-[10px] font-extrabold leading-tight whitespace-nowrap sm:px-1 sm:py-1.5 sm:text-xs">
+                          <abbr title="そのレベルから次のレベルに上がるのに必要な経験値" className="cursor-help no-underline">必要経験値</abbr>
                         </th>
                       </tr>
                     </thead>
@@ -227,7 +227,7 @@ export function EmakiLevelCalc() {
                               {row.level}
                               {isCurrent && <span className="mt-0.5 block text-[0.55rem] font-bold text-notebook-red sm:text-[0.65rem]">いま</span>}
                             </th>
-                            <td className="border border-brand-yellow/50 px-0.5 py-0.5 text-[10px] leading-tight whitespace-nowrap sm:py-1 sm:text-sm">{row.cumulativeToNext.toLocaleString()}</td>
+                            <td className="border border-brand-yellow/50 px-0.5 py-0.5 text-[10px] leading-tight whitespace-nowrap sm:py-1 sm:text-sm">{row.levelCumulative.toLocaleString()}</td>
                             <td className="border border-brand-yellow/50 px-0.5 py-0.5 text-[10px] leading-tight whitespace-nowrap sm:py-1 sm:text-sm">{row.need.toLocaleString()}</td>
                           </tr>
                         );
