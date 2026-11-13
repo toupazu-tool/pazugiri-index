@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
+import Image from "next/image";
 import { calcDailyQuota, calcRemainingDays, calcRequiredTotal, calcSchedule } from "@/lib/quota";
 import type { EventData } from "@/lib/events";
 import { site } from "@/lib/site";
@@ -25,6 +26,24 @@ function listEventDates(startIso: string, endIso: string): string[] {
   return dates;
 }
 
+// 日本時間の日付を「2026-11-13」の形で出す（PHPの date('Y-m-d') に近い）
+const toTokyoDate = (date: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(date);
+
+// 1分ごとに「今」を更新する（残り時間の表示用）
+const subscribeMinute = (onChange: () => void) => {
+  const id = setInterval(onChange, 60_000);
+  return () => clearInterval(id);
+};
+const getMinute = () => Math.floor(Date.now() / 60000);
+const getServerMinute = () => null;
+
+// ブラウザでは1分ごとの「今」を返し、サーバーではまだ時刻がないので null
+function useNow(): Date | null {
+  const m = useSyncExternalStore<number | null>(subscribeMinute, getMinute, getServerMinute);
+  return m === null ? null : new Date(m * 60000);
+}
+
 // 計算ツール本体。どのイベントかは event で受け取る（PHPで関数に引数を渡すのと同じ）
 export function PointCalc({ event }: { event: EventData }) {
 //報酬データ（maxCount は交換所の「あと◯回」）。イベントデータから受け取る
@@ -37,14 +56,15 @@ const eventDays = listEventDates(event.start, event.end).map((date) => ({
 }));
 const [days, setDays] = useState(eventDays);
 const [loaded, setLoaded] = useState(false); // 保存データを読み終わったか
-const [today, setToday] = useState("");
-const [now, setNow] = useState<Date | null>(null);
+const [currentPoints, setCurrentPoints] = useState(0);
+const [counts, setCounts] = useState(rewards.map(() => 0));
+const now = useNow();
+const today = now ? toTokyoDate(now) : "";
 
 useEffect(() => {
-  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(new Date());
-  setToday(todayStr);
-
-  const now = new Date();
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // URLやlocalStorageの値を画面に反映する処理。サーバーでは window も保存データもないので、表示後に一度読み込む必要がある
+  const todayStr = toTokyoDate(new Date());
 
   const params = new URLSearchParams(window.location.search);
   //共有URLに値があればURLを優先。なければ前回ブラウザに保存した内容を使う（PHPの $_GET → $_COOKIE の順に見るイメージ）
@@ -58,7 +78,10 @@ useEffect(() => {
   const pick = (name: string) => (hasUrl ? params.get(name) : saved[name] ?? null);
 
   const current = pick("current");
-  if (current) setCurrentPoints(Math.max(0, Number(current)));
+  if (current) {
+    const n = Number(current);
+    if (Number.isFinite(n)) setCurrentPoints(Math.max(0, n));
+  }
 
   const countsParam = pick("counts");
   if (countsParam) {
@@ -86,37 +109,25 @@ useEffect(() => {
     }, 100);
   }
   setLoaded(true);
-}, []);
-
-//現在時刻を取得
-useEffect(() => {
-  // ① まず今の時刻を入れる
-  setNow(new Date());
-
-  // ② 1分ごとに同じことをするタイマーを作る
-  const id = setInterval(() => {
-    setNow(new Date());
-  }, 60000);
-
-  // ③ 画面を閉じたらタイマーを止める
-  return () => clearInterval(id);
-}, []);
-
-const [currentPoints, setCurrentPoints] = useState(0);
-const [counts, setCounts] = useState(rewards.map(() => 0));
+  /* eslint-enable react-hooks/set-state-in-effect */
+}, [STORAGE_KEY, rewards]);
 
 //入力が変わるたびにブラウザへ保存（読み込みが終わる前は保存しない）
 useEffect(() => {
   if (!loaded) return;
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      current: String(currentPoints),
-      counts: counts.join(","),
-      days: days.map((day) => (day.playable ? "1" : "0")).join(""),
-    })
-  );
-}, [loaded, currentPoints, counts, days]);
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        current: String(currentPoints),
+        counts: counts.join(","),
+        days: days.map((day) => (day.playable ? "1" : "0")).join(""),
+      })
+    );
+  } catch {
+    // プライベートモードなどで保存できないときは、入力の復元を諦める
+  }
+}, [loaded, currentPoints, counts, days, STORAGE_KEY]);
 
 const requiredTotal = calcRequiredTotal(rewards.map((r, i) => ({ ...r, count: counts[i] })));
 const remainingDays = calcRemainingDays(days);
@@ -155,8 +166,6 @@ const lastDayText = dailyQuota > 0 && lastSchedule?.target !== dailyQuota
   ? `最終日：${lastSchedule?.target.toLocaleString()}pt`
   : "";
 
-// 選んだ日の最初と最後を「11/7〜11/18」の形にする
-const playableDays = days.filter((day) => day.playable);
 const formatDate = (date: string) => {
   const [, m, d] = date.split("-");
   return `${Number(m)}/${Number(d)}`;
@@ -181,14 +190,6 @@ if (now && now > end) {
     exchangeStatus = "交換終了";
   }
 }
-
-const first = playableDays[0];
-const last = playableDays[playableDays.length - 1];
-const rangeText = !first
-  ? ""
-  : first === last
-    ? formatDate(first.date)
-    : `${formatDate(first.date)}〜${formatDate(last.date)}`;
 
 const shareText = dailyQuota === 0
   ? "報酬交換の目標を達成済みです！"
@@ -230,7 +231,7 @@ return (
       <div className="px-1 pt-6 pb-1">
         {/* キャラアイコン（public/to-top.svg）。スマホは上、PCは横 */}
         <h1 className="mt-2 flex flex-col items-center justify-center gap-2 text-center text-2xl sm:flex-row sm:gap-3 leading-relaxed font-extrabold">
-          <img src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" />
+          <Image src="/to-top.svg" alt="" width={178} height={158} className="h-12 w-auto shrink-0" unoptimized />
           <span>ぱずぎり<br className="sm:hidden" /> イベントノルマ計算ツール</span>
         </h1>
         {/* 入力内容の保存についてのお知らせ */}
@@ -307,7 +308,7 @@ return (
               >
                 {/* アイコン */}
                 <div className="relative shrink-0">
-                  <img src={reward.image} alt="" width={64} height={64} className="size-14 sm:size-20" />
+                  <Image src={reward.image} alt="" width={64} height={64} className="size-14 sm:size-20" />
                   {reward.amount > 1 && (
                     <span className="absolute -bottom-1 -right-2 text-lg font-extrabold text-[#5a4630] [text-shadow:0_0_2px_#fff,0_0_2px_#fff,0_0_2px_#fff]">
                       {reward.amount}
