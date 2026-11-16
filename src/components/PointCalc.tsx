@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect } from "react";
+import { useNow } from "@/lib/useNow";
 import Image from "next/image";
 import { calcDailyQuota, calcRemainingDays, calcSchedule } from "@/lib/quota";
 import { rewardTemplates } from "@/components/rewards";
@@ -32,19 +33,6 @@ function listEventDates(startIso: string, endIso: string): string[] {
 const toTokyoDate = (date: Date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(date);
 
-// 1分ごとに「今」を更新する（残り時間の表示用）
-const subscribeMinute = (onChange: () => void) => {
-  const id = setInterval(onChange, 60_000);
-  return () => clearInterval(id);
-};
-const getMinute = () => Math.floor(Date.now() / 60000);
-const getServerMinute = () => null;
-
-// ブラウザでは1分ごとの「今」を返し、サーバーではまだ時刻がないので null
-function useNow(): Date | null {
-  const m = useSyncExternalStore<number | null>(subscribeMinute, getMinute, getServerMinute);
-  return m === null ? null : new Date(m * 60000);
-}
 
 // 計算ツール本体。どのイベントかは event で受け取る（PHPで関数に引数を渡すのと同じ）
 export function PointCalc({ event }: { event: EventData }) {

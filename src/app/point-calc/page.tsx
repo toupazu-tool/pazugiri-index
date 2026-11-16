@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { EventStatusLabel } from "@/components/TopEventButtons";
 import { events, shortDate } from "@/lib/events";
 import { pageMeta, site, tool } from "@/lib/site";
 
@@ -32,6 +33,8 @@ export default function PointCalcListPage() {
                 <span className="mt-1 block text-notebook-muted">
                   {event.start.slice(0, 4)}年 {shortDate(event.start)}〜{shortDate(event.end)}{event.type === "exchange" && `（交換は${shortDate(event.exchangeEnd)}まで）`}
                 </span>
+                {/* 開催中・交換期間中などの状態（開いた人のブラウザの時刻で出す） */}
+                <EventStatusLabel event={event} />
               </Link>
             </li>
           ))}
