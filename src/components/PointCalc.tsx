@@ -4,6 +4,7 @@ import { useState, useEffect, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { calcDailyQuota, calcRemainingDays, calcSchedule } from "@/lib/quota";
 import { rewardTemplates } from "@/components/rewards";
+import { renderScheduleTablePngBlob, saveScheduleImage, scheduleImageFilename } from "@/lib/scheduleTableImage";
 import type { EventData } from "@/lib/events";
 import { site } from "@/lib/site";
 import { sendGAEvent } from "@next/third-parties/google";
@@ -62,6 +63,8 @@ const [currentPoints, setCurrentPoints] = useState(0);
 const [selection, setSelection] = useState(() => template.normalize(null, event));
 const now = useNow();
 const today = now ? toTokyoDate(now) : "";
+const [imageBusy, setImageBusy] = useState(false); // 画像を作っている途中
+const [imageHint, setImageHint] = useState(""); // 画像が作れなかったときのお知らせ
 
 useEffect(() => {
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -208,6 +211,41 @@ const params = new URLSearchParams({
 });
 const shareUrl = `${site.url}/point-calc/${event.slug}?${params}#schedule`;
 const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`;
+
+//日ごとの予定を画像にして保存する（画面の予定表と同じ中身。サーバーには送らない）
+const startHour = Number(event.start.slice(11, 13));
+const endHour = Number(event.end.slice(11, 13));
+const handleSaveScheduleImage = async () => {
+  if (imageBusy) return;
+  setImageBusy(true);
+  setImageHint("");
+  try {
+    const blob = await renderScheduleTablePngBlob({
+      eventName: event.name,
+      quota: dailyQuota === 0 ? "達成済み" : `${dailyQuota.toLocaleString()}pt`,
+      goal: rewardTarget.goalLabel,
+      summary: [
+        { label: "現在ポイント", value: `${currentPoints.toLocaleString()}pt` },
+        { label: "必要ポイント", value: `${requiredTotal.toLocaleString()}pt` },
+        { label: "残りポイント", value: `${rest.toLocaleString()}pt` },
+        { label: "残り日数", value: `${remainingDays}日` },
+      ],
+      rows: schedule.map((day, i) => ({
+        date: `${formatDate(day.date)}（${weekdayOf(day.date)}）`,
+        note: i === 0 ? `${startHour}時開始` : i === schedule.length - 1 ? `${endHour}時終了` : undefined,
+        target: `${day.target.toLocaleString()}pt`,
+        cumulative: `${day.cumulative.toLocaleString()}pt`,
+        highlight: day.date === today,
+      })),
+    });
+    await saveScheduleImage(blob, scheduleImageFilename(event.slug));
+    sendGAEvent("event", "share", { method: "image_save" });
+  } catch {
+    setImageHint("画像を作れませんでした。もう一度試してみてください。");
+  } finally {
+    setImageBusy(false);
+  }
+};
 
 return (
   <>
@@ -382,6 +420,24 @@ return (
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* 表を画像保存（絵巻守Lv早見表と同じ配置） */}
+        <div className="mt-4 space-y-2">
+          <h3 className="text-center text-sm font-extrabold">表を画像保存</h3>
+          <button
+            type="button"
+            onClick={() => { void handleSaveScheduleImage(); }}
+            disabled={imageBusy}
+            className="flex min-h-12 w-full items-center justify-center rounded-xl border border-notebook-line bg-white px-3 text-sm font-bold text-notebook-muted hover:bg-notebook-beige focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-50"
+          >
+            {imageBusy ? "画像を作っています…" : "日ごとの予定を保存"}
+          </button>
+          {imageHint && (
+            <p role="status" className="rounded-sm border border-brand-yellow bg-[#fff6d9] px-3 py-2 text-center text-xs font-bold text-[#7a5a00]">
+              {imageHint}
+            </p>
+          )}
         </div>
       </section>
     </main>

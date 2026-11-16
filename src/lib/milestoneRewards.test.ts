@@ -41,6 +41,10 @@ describe("calcMilestoneTarget", () => {
     expect(calcMilestoneTarget(2, milestones).requiredTotal).toBe(6000);
   });
 
+  it("目標の説明に名前とポイントを入れる", () => {
+    expect(calcMilestoneTarget(1, milestones).goalLabel).toBe("B（3,000pt）");
+  });
+
   it("グラフ用の印を少ない順で全部持つ", () => {
     expect(calcMilestoneTarget(0, milestones).milestones).toEqual([
       { label: "A", points: 1000 },

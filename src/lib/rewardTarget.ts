@@ -5,4 +5,6 @@ export type RewardTarget = {
   requiredTotal: number;
   // グラフに印を付けるための「◯ptでこれがもらえる」一覧。交換所型は空
   milestones: { label: string; points: number }[];
+  // 目標の説明（到達型：「経験値の書・中（10,000pt）」）。保存画像などに出す。交換所型はなし
+  goalLabel?: string;
 };
