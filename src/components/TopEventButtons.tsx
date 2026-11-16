@@ -60,6 +60,20 @@ export function TopEventButtonsView({ events, now }: { events: EventData[]; now:
   );
 }
 
+// イベント一覧のカード。終わったイベント（交換・受け取りも終わったもの）は背景を少し落ち着いた色にする
+const listCardClass = "block rounded-2xl border border-notebook-line px-4 py-5 shadow-[0_4px_8px_rgba(90,70,48,0.3)] transition hover:-translate-y-0.5 sm:p-6";
+export function EventListCard({ event, children }: { event: EventData; children: React.ReactNode }) {
+  const now = useNow();
+  const ended = now !== null && getEventPhase(event, now) === "ended";
+  return (
+    <Link href={`/point-calc/${event.slug}`} className={`${listCardClass} ${ended ? "bg-notebook-beige" : "bg-notebook-paper"}`}>
+      {children}
+      {/* 開催中・交換期間中などの状態（開いた人のブラウザの時刻で出す） */}
+      <EventStatusLabel event={event} />
+    </Link>
+  );
+}
+
 // イベント一覧のカードに出す、小さな状態のラベル
 export function EventStatusLabel({ event }: { event: EventData }) {
   const now = useNow();
