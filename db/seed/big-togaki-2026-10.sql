@@ -18,7 +18,7 @@ insert into items (name, kind, icon_url) values
   ('【刀剣男士】陸奥守吉行(勇気百寸)', 'sword', null),
   ('陸奥守吉行(勇気百寸)の強化片', 'material', null),
   ('絵馬Pt', 'other', null),
-  ('青色の絵具', 'material', null)
+  ('青の絵具', 'material', null)
 on conflict (name) do update set kind = excluded.kind, icon_url = coalesce(items.icon_url, excluded.icon_url);
 
 insert into events (slug, name, event_type, category, start_at, end_at, reward_end_at, point_unit, status, source_url)
@@ -75,7 +75,7 @@ from (values
   ('陸奥守吉行(勇気百寸)の強化片', 150, 110000, null::integer, null::text, 440),
   ('小判', 5000, 115000, null::integer, null::text, 450),
   ('宝玉', 100, 120000, null::integer, null::text, 460),
-  ('青色の絵具', 1, 125000, null::integer, null::text, 470),
+  ('青の絵具', 1, 125000, null::integer, null::text, 470),
   ('陸奥守吉行(勇気百寸)の強化片', 150, 130000, null::integer, null::text, 480),
   ('【絵馬】一寸の大冒険', 1, 135000, null::integer, null::text, 490),
   ('サンゴ', 2, 140000, null::integer, null::text, 500),
@@ -91,7 +91,7 @@ from (values
   ('絵馬Pt', 250, 240000, null::integer, null::text, 600),
   ('宝玉', 300, 250000, null::integer, null::text, 610),
   ('陸奥守吉行(勇気百寸)の強化片', 150, 260000, null::integer, null::text, 620),
-  ('青色の絵具', 1, 270000, null::integer, null::text, 630),
+  ('青の絵具', 1, 270000, null::integer, null::text, 630),
   ('宝玉', 300, 280000, null::integer, null::text, 640),
   ('陸奥守吉行(勇気百寸)の強化片', 300, 290000, null::integer, null::text, 650),
   ('小判', 40000, 300000, null::integer, null::text, 660),
