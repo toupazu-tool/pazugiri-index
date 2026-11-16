@@ -3,7 +3,7 @@
 // トップの「イベントノルマ計算ツール」のボタン
 // 開いた人のブラウザの時刻で、開催中・交換期間中を出し分ける（トップは前もって作るページなので、ここで判定する）
 import Link from "next/link";
-import { events, latestEvent, shortDate, type EventData } from "@/lib/events";
+import { events, shortDate, type EventData } from "@/lib/events";
 import { eventStatusText, getEventPhase, pickTopEvents, type EventPhase } from "@/lib/eventStatus";
 import { useNow } from "@/lib/useNow";
 
@@ -21,8 +21,13 @@ function buttonLabel(name: string, phase: EventPhase | null) {
 
 export function TopEventButtons() {
   const now = useNow();
+  return <TopEventButtonsView events={events} now={now} />;
+}
+
+// 見た目の部分。イベント一覧と時刻を外から受け取る（画面の確認やテストで、好きな日時にできるように）
+export function TopEventButtonsView({ events, now }: { events: EventData[]; now: Date | null }) {
   // 時刻が入るまで（サーバーで作るとき）は、いちばん新しいイベントだけを出す
-  const { main, exchange } = now ? pickTopEvents(events, now) : { main: latestEvent, exchange: [] };
+  const { main, exchange } = now ? pickTopEvents(events, now) : { main: events[0] ?? null, exchange: [] };
   if (!main) return null;
   const mainPhase = now ? getEventPhase(main, now) : null;
   const mainFilled = mainPhase === null || mainPhase === "ongoing" || mainPhase === "upcoming";
