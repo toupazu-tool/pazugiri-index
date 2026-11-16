@@ -32,7 +32,8 @@ create table events (
   category text not null,                      -- 画面のラベル（シナリオイベント、大討伐…）
   start_at timestamptz not null,               -- 開始日時
   end_at timestamptz not null,                 -- 終了日時（12:59まで → 13:00:00）
-  exchange_end_at timestamptz,                 -- 交換期限（交換所型だけ）
+  reward_end_at timestamptz,                   -- 交換期限（交換所型・必須）／報酬の受け取り期限（到達型・わかれば）
+  point_unit text not null default 'pt',       -- ポイントの単位（pt、体 など。画面と保存画像に出す）
   status text not null default 'draft'
     check (status in ('draft', 'published')),  -- 下書き／公開（下書きはどこにも出ない）
   source_url text,                             -- お知らせ（公式X）の URL
@@ -44,11 +45,10 @@ create table events (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (end_at > start_at),
-  -- 交換所型は交換期限が必須（終了以降）、到達型は空
-  check (
-    (event_type = 'exchange' and exchange_end_at is not null and exchange_end_at >= end_at)
-    or (event_type = 'milestone' and exchange_end_at is null)
-  ),
+  -- 交換所型は交換期限が必須。期限を入れるなら終了以降
+  check (event_type <> 'exchange' or reward_end_at is not null),
+  check (reward_end_at is null or reward_end_at >= end_at),
+  check (point_unit <> ''),
   check (top_from is null or top_until is null or top_until > top_from)
 );
 
