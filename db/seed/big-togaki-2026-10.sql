@@ -78,7 +78,7 @@ from (values
   ('青色の絵具', 1, 125000, null::integer, null::text, 470),
   ('陸奥守吉行(勇気百寸)の強化片', 150, 130000, null::integer, null::text, 480),
   ('【絵馬】一寸の大冒険', 1, 135000, null::integer, null::text, 490),
-  ('サンゴ', 1, 140000, null::integer, null::text, 500),
+  ('サンゴ', 2, 140000, null::integer, null::text, 500),
   ('小判', 5000, 150000, null::integer, null::text, 510),
   ('陸奥守吉行(勇気百寸)の強化片', 150, 160000, null::integer, null::text, 520),
   ('宝玉', 200, 170000, null::integer, null::text, 530),
