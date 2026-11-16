@@ -43,8 +43,16 @@ describe("pickTopEvents", () => {
     expect(pickTopEvents(events, at("2026-11-10T12:00:00+09:00"))).toEqual({ main: jigoku, exchange: [] });
   });
 
-  it("メンテの間（地獄めぐり終了〜大討伐開始）は、次のイベントを大きく、地獄めぐりを交換期間中で出す", () => {
-    expect(pickTopEvents(events, at("2026-11-18T14:00:00+09:00"))).toEqual({ main: gaki, exchange: [jigoku] });
+  it("メンテの間（地獄めぐり終了〜大討伐開始）は、開催前の大討伐を出さず、地獄めぐりだけを出す", () => {
+    expect(pickTopEvents(events, at("2026-11-18T14:00:00+09:00"))).toEqual({ main: jigoku, exchange: [] });
+  });
+
+  it("開始時刻になったら、大討伐が大きいボタンに切り替わる", () => {
+    expect(pickTopEvents(events, at("2026-11-18T15:00:00+09:00"))).toEqual({ main: gaki, exchange: [jigoku] });
+  });
+
+  it("まだどのイベントも始まっていなければ、何も出さない", () => {
+    expect(pickTopEvents(events, at("2026-11-01T12:00:00+09:00"))).toEqual({ main: null, exchange: [] });
   });
 
   it("大討伐の開催中も、交換期限までは地獄めぐりを小さく出す", () => {

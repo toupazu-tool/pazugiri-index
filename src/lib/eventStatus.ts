@@ -16,17 +16,15 @@ export function getEventPhase(event: EventData, now: Date): EventPhase {
 }
 
 /**
- * トップに出すイベントを選ぶ
- * main：大きいボタン。開催中 → いちばん早く始まる開催前 → いちばん新しく足したイベント の順で選ぶ
+ * トップに出すイベントを選ぶ。開催前のイベントは出さない（メンテ中に次のイベントを見せないため）
+ * main：大きいボタン。開催中 → それがなければ、始まっているイベントのうちいちばん新しく足したもの
  * exchange：その下の小さいボタン。終わって交換期間中のイベント（main と同じものは除く）
  */
 export function pickTopEvents(events: EventData[], now: Date): { main: EventData | null; exchange: ExchangeEvent[] } {
-  const ongoing = events.find((event) => getEventPhase(event, now) === "ongoing");
-  const upcoming = events
-    .filter((event) => getEventPhase(event, now) === "upcoming")
-    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())[0];
-  const main = ongoing ?? upcoming ?? events[0] ?? null;
-  const exchange = events.filter(
+  const started = events.filter((event) => getEventPhase(event, now) !== "upcoming");
+  const ongoing = started.find((event) => getEventPhase(event, now) === "ongoing");
+  const main = ongoing ?? started[0] ?? null;
+  const exchange = started.filter(
     (event): event is ExchangeEvent => event !== main && getEventPhase(event, now) === "exchange",
   );
   return { main, exchange };

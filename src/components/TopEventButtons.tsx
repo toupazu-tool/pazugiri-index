@@ -26,11 +26,19 @@ export function TopEventButtons() {
 
 // 見た目の部分。イベント一覧と時刻を外から受け取る（画面の確認やテストで、好きな日時にできるように）
 export function TopEventButtonsView({ events, now }: { events: EventData[]; now: Date | null }) {
-  // 時刻が入るまで（サーバーで作るとき）は、いちばん新しいイベントだけを出す
-  const { main, exchange } = now ? pickTopEvents(events, now) : { main: events[0] ?? null, exchange: [] };
+  // 時刻が入るまで（サーバーで作るとき・開いた直後の一瞬）は、どのイベントを出すか決められないので、
+  // 同じ高さの空の枠だけ出す（開催前のイベントが一瞬見えないように。高さをそろえて画面がずれないように）
+  if (!now) {
+    return (
+      <div className="mt-4 space-y-2" aria-hidden="true">
+        <div className="min-h-14 rounded-xl bg-notebook-beige" />
+      </div>
+    );
+  }
+  const { main, exchange } = pickTopEvents(events, now);
   if (!main) return null;
-  const mainPhase = now ? getEventPhase(main, now) : null;
-  const mainFilled = mainPhase === null || mainPhase === "ongoing" || mainPhase === "upcoming";
+  const mainPhase = getEventPhase(main, now);
+  const mainFilled = mainPhase === "ongoing" || mainPhase === "upcoming";
 
   return (
     <div className="mt-4 space-y-2">
@@ -38,10 +46,10 @@ export function TopEventButtonsView({ events, now }: { events: EventData[]; now:
         <span className="text-base">{buttonLabel(main.name, mainPhase)}</span>
         <span className={`text-xs ${mainFilled ? "text-white/90" : "text-notebook-muted"}`}>
           {shortDate(main.start)}〜{shortDate(main.end)}
-          {now && <>　{eventStatusText(main, now)}</>}
+          　{eventStatusText(main, now)}
         </span>
       </Link>
-      {now && exchange.map((event: EventData) => (
+      {exchange.map((event: EventData) => (
         <Link key={event.slug} href={`/point-calc/${event.slug}`} className={outlineClass}>
           <span className="text-sm">{buttonLabel(event.name, "exchange")}</span>
           <span className="text-xs text-notebook-red">{eventStatusText(event, now)}</span>
