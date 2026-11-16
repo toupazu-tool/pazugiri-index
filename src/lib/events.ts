@@ -9,9 +9,14 @@ export type Reward = {
   amount: number;
 };
 
+// イベントの形（報酬の画面テンプレートがこれで切り替わる。src/components/rewards/index.ts）
+// exchange：交換所型（ポイントで報酬を交換する）
+export type EventType = "exchange";
+
 export type EventData = {
   slug: string; // URLに使う名前（/point-calc/◯◯）
   name: string;
+  type: EventType;
   category: string;
   start: string;
   end: string;
@@ -23,6 +28,7 @@ export const events: EventData[] = [
   {
     slug: "jigoku-meguri-2026",
     name: "地獄めぐり",
+    type: "exchange",
     category: "シナリオイベント",
     start: "2026-11-04T18:00:00+09:00", // 開始：11/4 18:00
     end: "2026-11-18T13:00:00+09:00", // 終了：11/18 12:59まで（13:00ちょうどに終了）
