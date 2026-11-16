@@ -1,5 +1,6 @@
 // イベントが今どの状態か（開催前・開催中・交換期間中・終了）を決める
 // トップのボタンとイベント一覧で使う。時刻は呼び出し側から渡す（テストしやすくするため）
+import { formatEnd, formatStart } from "./dateFormat";
 import type { EventData, ExchangeEvent } from "./events";
 
 export type EventPhase = "upcoming" | "ongoing" | "exchange" | "ended";
@@ -30,37 +31,24 @@ export function pickTopEvents(events: EventData[], now: Date): { main: EventData
   return { main, exchange };
 }
 
-// "2026-11-18T15:00:00+09:00" → 日本時間の「11/18」「15:00」
-function tokyoParts(date: Date) {
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  return { md: `${Number(get("month"))}/${Number(get("day"))}`, hour: Number(get("hour")), hm: `${get("hour")}:${get("minute")}` };
+/** 期限の文。交換所型「交換は11/25（水）12:59まで」、到達型は受け取り期限がわかるときだけ */
+export function deadlineText(event: EventData): string {
+  if (event.type === "exchange") return `交換は${formatEnd(event.exchangeEnd)}まで`;
+  if (event.rewardEnd) return `受け取りは${formatEnd(event.rewardEnd)}まで`;
+  return "";
 }
 
-/** ボタンや一覧に出す、短い状態の文 */
+/** ボタンや一覧に出す、短い状態の文（期限の日時は deadlineText で別に出す） */
 export function eventStatusText(event: EventData, now: Date): string {
   const phase = getEventPhase(event, now);
-  if (phase === "upcoming") {
-    const { md, hour } = tokyoParts(new Date(event.start));
-    return `${md} ${hour}時から`;
-  }
+  if (phase === "upcoming") return `${formatStart(event.start)}から`;
   if (phase === "ongoing") {
     const diff = new Date(event.end).getTime() - now.getTime();
     return `開催中（残り${Math.floor(diff / DAY_MS)}日${Math.floor((diff % DAY_MS) / HOUR_MS)}時間）`;
   }
   if (phase === "exchange" && event.type === "exchange") {
-    const exchangeEnd = new Date(event.exchangeEnd);
-    const leftDays = Math.ceil((exchangeEnd.getTime() - now.getTime()) / DAY_MS);
-    // 13:00終了なら「12:59まで」と書く（イベントページと同じ）
-    const { md, hm } = tokyoParts(new Date(exchangeEnd.getTime() - 60 * 1000));
-    return `交換期間中（あと${leftDays}日・${md} ${hm}まで）`;
+    const leftDays = Math.ceil((new Date(event.exchangeEnd).getTime() - now.getTime()) / DAY_MS);
+    return `交換期間中（あと${leftDays}日）`;
   }
   return "終了";
 }

@@ -1,7 +1,8 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { EventListCard } from "@/components/TopEventButtons";
-import { shortDate } from "@/lib/events";
+import { formatPeriodParts } from "@/lib/dateFormat";
+import { deadlineText } from "@/lib/eventStatus";
 import { getEvents } from "@/lib/eventSource";
 import { pageMeta, site, tool } from "@/lib/site";
 
@@ -30,9 +31,8 @@ export default async function PointCalcListPage() {
               <EventListCard event={event.type === "exchange" ? { ...event, rewards: [] } : { ...event, milestones: [] }}>
                 <span className="inline-block rounded-sm bg-notebook-green px-2 py-1 text-xs font-bold text-white">{event.category}</span>
                 <span className="mt-2 block text-xl font-extrabold tracking-widest">{event.name}</span>
-                <span className="mt-1 block text-notebook-muted">
-                  {event.start.slice(0, 4)}年 {shortDate(event.start)}〜{shortDate(event.end)}{event.type === "exchange" && `（交換は${shortDate(event.exchangeEnd)}まで）`}
-                </span>
+                <span className="mt-1 block text-notebook-muted">{formatPeriodParts(event.start, event.end).map((part) => <span key={part} className="inline-block">{part}</span>)}</span>
+                {deadlineText(event) && <span className="block text-notebook-muted">{deadlineText(event)}</span>}
               </EventListCard>
             </li>
           ))}

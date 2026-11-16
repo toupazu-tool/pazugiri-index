@@ -7,6 +7,7 @@ import { calcDailyQuota, calcRemainingDays, calcSchedule } from "@/lib/quota";
 import { rewardTemplates } from "@/components/rewards";
 import { renderScheduleTablePngBlob, saveScheduleImage, scheduleImageFilename } from "@/lib/scheduleTableImage";
 import { unitOf, type EventData } from "@/lib/events";
+import { formatEnd, formatPeriodParts } from "@/lib/dateFormat";
 import { site } from "@/lib/site";
 import { sendGAEvent } from "@next/third-parties/google";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -166,12 +167,9 @@ const weekdayOf = (date: string) => weekdays[new Date(`${date}T12:00:00+09:00`).
 const exchangeEndIso = event.type === "exchange" ? event.exchangeEnd : event.rewardEnd ?? null;
 const deadlineLabel = event.type === "exchange" ? "交換" : "受け取り";
 const exchangeEnd = exchangeEndIso ? new Date(exchangeEndIso) : null;
-const exchangeDate = exchangeEndIso ? `${formatDate(exchangeEndIso.slice(0, 10))}（${weekdayOf(exchangeEndIso.slice(0, 10))}）` : "";
-// 13:00終了なら「12:59まで」と表示する（1分前の時刻を作る）
-const exchangeTime = exchangeEnd
-  ? new Date(exchangeEnd.getTime() - 60 * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })
-  : "";
-const exchangeText = exchangeEnd ? `${deadlineLabel}は${exchangeDate} ${exchangeTime}まで` : "";
+// 期限の日時は共通の書き方（src/lib/dateFormat.ts。13:00終了は12:59と書く）
+const exchangeWhen = exchangeEndIso ? formatEnd(exchangeEndIso) : "";
+const exchangeText = exchangeEndIso ? `${deadlineLabel}は${exchangeWhen}まで` : "";
 let exchangeStatus = ""; // イベント後だけ使う：交換期間中 / 交換終了
 let exchangeLeftDays = 0;
 if (exchangeEnd && now && now > end) {
@@ -247,7 +245,7 @@ return (
       {exchangeStatus === "交換期間中" && (
         <p role="alert" className="mt-5 rounded-sm border-2 border-notebook-red bg-notebook-red px-4 py-3 text-center text-base font-extrabold text-white">
           イベントは終了しました。<br />
-          {deadlineLabel}はあと{exchangeLeftDays}日（{exchangeDate} {exchangeTime}まで）
+          {deadlineLabel}はあと{exchangeLeftDays}日（{exchangeWhen}まで）
         </p>
       )}
       {exchangeStatus === "交換終了" && (
@@ -270,7 +268,7 @@ return (
         <p className={`inline-block rounded-sm px-2 py-1 text-xs font-bold ${categoryColors[event.category]?.label ?? "bg-notebook-beige text-notebook-muted"}`}>{event.category}</p>
         <h2 className="mt-3 text-2xl font-extrabold tracking-widest">{event.name}</h2>
         <p className="mt-1 text-xs text-notebook-muted">
-          {formatDate(event.start.slice(0, 10))} {event.start.slice(11, 16)} 〜 {formatDate(event.end.slice(0, 10))} {event.end.slice(11, 16)}
+          {formatPeriodParts(event.start, event.end).map((part) => <span key={part} className="inline-block">{part}</span>)}
         </p>
         {status && <p className="mt-3 inline-block -rotate-2 rounded-sm border border-notebook-red px-2 py-1 text-xs font-bold text-notebook-red">{status}</p>}
         {exchangeText && <p className="mt-3 text-sm font-extrabold text-notebook-red">⚠ {exchangeText}</p>}

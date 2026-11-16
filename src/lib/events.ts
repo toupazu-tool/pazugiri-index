@@ -91,7 +91,4 @@ export const events: EventData[] = [
 
 // イベントを探す・一覧を取るのは src/lib/eventSource.ts（events.ts か DB かを切り替える）
 
-// 「11/4」のような短い日付
-export function shortDate(iso: string) {
-  return `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
-}
+// 日時の書き方は src/lib/dateFormat.ts にまとめてある

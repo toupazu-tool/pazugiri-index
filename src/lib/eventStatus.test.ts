@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventStatusText, getEventPhase, pickTopEvents } from "./eventStatus";
+import { deadlineText, eventStatusText, getEventPhase, pickTopEvents } from "./eventStatus";
 import type { EventData } from "./events";
 
 const jigoku: EventData = {
@@ -70,18 +70,29 @@ describe("pickTopEvents", () => {
 
 describe("eventStatusText", () => {
   it("開催前は開始の日時", () => {
-    expect(eventStatusText(gaki, at("2026-11-18T14:00:00+09:00"))).toBe("11/18 15時から");
+    expect(eventStatusText(gaki, at("2026-11-18T14:00:00+09:00"))).toBe("11/18（水）15:00から");
   });
 
   it("開催中は残り時間", () => {
     expect(eventStatusText(jigoku, at("2026-11-15T10:00:00+09:00"))).toBe("開催中（残り3日3時間）");
   });
 
-  it("交換期間中は残り日数と期限（13:00終了は12:59と書く）", () => {
-    expect(eventStatusText(jigoku, at("2026-11-21T12:00:00+09:00"))).toBe("交換期間中（あと5日・11/25 12:59まで）");
+  it("交換期間中は残り日数（期限の日時は deadlineText で別に出す）", () => {
+    expect(eventStatusText(jigoku, at("2026-11-21T12:00:00+09:00"))).toBe("交換期間中（あと5日）");
   });
 
   it("終わったら終了", () => {
     expect(eventStatusText(jigoku, at("2026-11-26T12:00:00+09:00"))).toBe("終了");
+  });
+});
+
+describe("deadlineText", () => {
+  it("交換所型は交換期限（13:00終了は12:59）", () => {
+    expect(deadlineText(jigoku)).toBe("交換は11/25（水）12:59まで");
+  });
+
+  it("到達型は受け取り期限があるときだけ", () => {
+    expect(deadlineText(gaki)).toBe("");
+    expect(deadlineText({ ...gaki, rewardEnd: "2026-12-09T13:00:00+09:00" } as EventData)).toBe("受け取りは12/9（水）12:59まで");
   });
 });

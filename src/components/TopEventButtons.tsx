@@ -3,8 +3,9 @@
 // トップの「イベントノルマ計算ツール」のボタン
 // 開いた人のブラウザの時刻で、開催中・交換期間中を出し分ける（トップは前もって作るページなので、ここで判定する）
 import Link from "next/link";
-import { shortDate, type EventData } from "@/lib/events";
-import { eventStatusText, getEventPhase, pickTopEvents, type EventPhase } from "@/lib/eventStatus";
+import { formatShortPeriod } from "@/lib/dateFormat";
+import type { EventData } from "@/lib/events";
+import { deadlineText, eventStatusText, getEventPhase, pickTopEvents, type EventPhase } from "@/lib/eventStatus";
 import { useNow } from "@/lib/useNow";
 
 // 開催中・開催前：緑で塗ったボタン（主役）
@@ -45,15 +46,17 @@ export function TopEventButtonsView({ events, now }: { events: EventData[]; now:
     <div className="mt-4 space-y-2">
       <Link href={`/point-calc/${main.slug}`} className={mainFilled ? filledClass : outlineClass}>
         <span className="text-base">{buttonLabel(main.name, mainPhase)}</span>
-        <span className={`text-xs ${mainFilled ? "text-white/90" : "text-notebook-muted"}`}>
-          {shortDate(main.start)}〜{shortDate(main.end)}
-          　{eventStatusText(main, now)}
-        </span>
+        {/* 期間と状態は2行に分ける（スマホの幅で途中から折り返さないように） */}
+        <span className={`text-xs ${mainFilled ? "text-white/90" : "text-notebook-muted"}`}>{formatShortPeriod(main.start, main.end)}</span>
+        <span className={`text-xs ${mainFilled ? "text-white" : "text-notebook-red"}`}>{eventStatusText(main, now)}</span>
+        {mainPhase === "exchange" && <span className="text-xs text-notebook-red">{deadlineText(main)}</span>}
       </Link>
       {exchange.map((event: EventData) => (
         <Link key={event.slug} href={`/point-calc/${event.slug}`} className={outlineClass}>
           <span className="text-sm">{buttonLabel(event.name, "exchange")}</span>
+          {/* 状態と期限は2行に分ける（スマホの幅で途中から折り返さないように） */}
           <span className="text-xs text-notebook-red">{eventStatusText(event, now)}</span>
+          <span className="text-xs text-notebook-muted">{deadlineText(event)}</span>
         </Link>
       ))}
     </div>
