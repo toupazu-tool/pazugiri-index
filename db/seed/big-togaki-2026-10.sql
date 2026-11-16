@@ -10,15 +10,15 @@ insert into items (name, kind, icon_url) values
   ('紙', 'material', null),
   ('筆', 'material', null),
   ('絵馬経験値の勾玉・小', 'material', null),
-  ('サイコロ', 'material', null),
-  ('鉄', 'material', null),
+  ('サイコロ', 'material', '/rewards/dice.png'),
+  ('鉄', 'material', '/rewards/iron.png'),
   ('サンゴ', 'material', null),
   ('経験値の書・小', 'material', null),
   ('ウロコ', 'material', null),
-  ('【刀剣男士】陸奥守吉行(勇気百寸)', 'sword', null),
-  ('陸奥守吉行(勇気百寸)の強化片', 'material', null),
+  ('【刀剣男士】陸奥守吉行(勇気百寸)', 'sword', '/rewards/mutsunokami-yoshiyuki-yuki-hyakusun.png'),
+  ('陸奥守吉行(勇気百寸)の強化片', 'material', '/rewards/mutsunokami-yoshiyuki-yuki-hyakusun-shard.png'),
   ('絵馬Pt', 'other', null),
-  ('青の絵具', 'material', null)
+  ('青の絵具', 'material', '/rewards/blue-paint.png')
 on conflict (name) do update set kind = excluded.kind, icon_url = coalesce(items.icon_url, excluded.icon_url);
 
 insert into events (slug, name, event_type, category, start_at, end_at, reward_end_at, point_unit, status, source_url)
