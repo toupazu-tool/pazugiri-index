@@ -4,9 +4,9 @@
 begin;
 insert into items (name, kind, icon_url) values
   ('小判', 'koban', null),
-  ('宝玉', 'other', null),
-  ('【絵馬】一寸の大冒険', 'other', null),
-  ('お花', 'material', null),
+  ('宝玉', 'other', '/rewards/gem.png'),
+  ('【絵馬】一寸の大冒険', 'other', '/rewards/ema-issun-no-daibouken.png'),
+  ('お花', 'material', '/rewards/flower.png'),
   ('紙', 'material', null),
   ('筆', 'material', null),
   ('絵馬経験値の勾玉・小', 'material', null),
