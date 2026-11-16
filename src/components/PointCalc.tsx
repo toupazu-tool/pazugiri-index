@@ -6,7 +6,7 @@ import Image from "next/image";
 import { calcDailyQuota, calcRemainingDays, calcSchedule } from "@/lib/quota";
 import { rewardTemplates } from "@/components/rewards";
 import { renderScheduleTablePngBlob, saveScheduleImage, scheduleImageFilename } from "@/lib/scheduleTableImage";
-import type { EventData } from "@/lib/events";
+import { unitOf, type EventData } from "@/lib/events";
 import { site } from "@/lib/site";
 import { sendGAEvent } from "@next/third-parties/google";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -38,6 +38,8 @@ const toTokyoDate = (date: Date) =>
 export function PointCalc({ event }: { event: EventData }) {
 //報酬の画面テンプレート（イベントの形で切り替える。src/components/rewards/index.ts）
 const template = rewardTemplates[event.type];
+//ポイントの単位（大討伐は「体」など）
+const unit = unitOf(event);
 //入力内容をブラウザに保存するときの名前（イベントごとに分ける）
 const STORAGE_KEY = `toupazu-point-calc:${event.slug}`;
 const eventDays = listEventDates(event.start, event.end).map((date) => ({
@@ -147,10 +149,10 @@ const schedule = calcSchedule(days, currentPoints, requiredTotal);
 const lastSchedule = schedule.findLast((day) => day.target > 0);
 const firstSchedule = schedule.find((day) => day.target > 0);
 const firstDayText = dailyQuota > 0 && days[0].playable && firstSchedule?.target !== dailyQuota
-  ? `初日：${firstSchedule?.target.toLocaleString()}pt`
+  ? `初日：${firstSchedule?.target.toLocaleString()}${unit}`
   : "";
 const lastDayText = dailyQuota > 0 && lastSchedule?.target !== dailyQuota
-  ? `最終日：${lastSchedule?.target.toLocaleString()}pt`
+  ? `最終日：${lastSchedule?.target.toLocaleString()}${unit}`
   : "";
 
 const formatDate = (date: string) => {
@@ -160,15 +162,16 @@ const formatDate = (date: string) => {
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 // "2026-11-08" → "日"（日本時間の正午で曜日を出すので、ずれない）
 const weekdayOf = (date: string) => weekdays[new Date(`${date}T12:00:00+09:00`).getDay()];
-//交換期限（交換所型だけ。表示用の文字と、イベント後の残り日数）
-const exchangeEndIso = event.type === "exchange" ? event.exchangeEnd : null;
+//期限（交換所型は交換期限、到達型は受け取り期限。表示用の文字と、イベント後の残り日数）
+const exchangeEndIso = event.type === "exchange" ? event.exchangeEnd : event.rewardEnd ?? null;
+const deadlineLabel = event.type === "exchange" ? "交換" : "受け取り";
 const exchangeEnd = exchangeEndIso ? new Date(exchangeEndIso) : null;
 const exchangeDate = exchangeEndIso ? `${formatDate(exchangeEndIso.slice(0, 10))}（${weekdayOf(exchangeEndIso.slice(0, 10))}）` : "";
 // 13:00終了なら「12:59まで」と表示する（1分前の時刻を作る）
 const exchangeTime = exchangeEnd
   ? new Date(exchangeEnd.getTime() - 60 * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })
   : "";
-const exchangeText = exchangeEnd ? `交換は${exchangeDate} ${exchangeTime}まで` : "";
+const exchangeText = exchangeEnd ? `${deadlineLabel}は${exchangeDate} ${exchangeTime}まで` : "";
 let exchangeStatus = ""; // イベント後だけ使う：交換期間中 / 交換終了
 let exchangeLeftDays = 0;
 if (exchangeEnd && now && now > end) {
@@ -184,9 +187,9 @@ const shareText = dailyQuota === 0
   ? template.doneMessage
   : [
     `選んだ日数：${remainingDays}日`,
-    `現在ポイント：${currentPoints.toLocaleString()}pt`,
-    `残り${rest.toLocaleString()}pt`,
-    `1日の目安：${dailyQuota.toLocaleString()}pt`,
+    `現在ポイント：${currentPoints.toLocaleString()}${unit}`,
+    `残り${rest.toLocaleString()}${unit}`,
+    `1日の目安：${dailyQuota.toLocaleString()}${unit}`,
     firstDayText,
     lastDayText,
   ].filter((line) => line !== "").join("\n");
@@ -210,19 +213,19 @@ const handleSaveScheduleImage = async () => {
   try {
     const blob = await renderScheduleTablePngBlob({
       eventName: event.name,
-      quota: dailyQuota === 0 ? "達成済み" : `${dailyQuota.toLocaleString()}pt`,
+      quota: dailyQuota === 0 ? "達成済み" : `${dailyQuota.toLocaleString()}${unit}`,
       goal: rewardTarget.goalLabel,
       summary: [
-        { label: "現在ポイント", value: `${currentPoints.toLocaleString()}pt` },
-        { label: "必要ポイント", value: `${requiredTotal.toLocaleString()}pt` },
-        { label: "残りポイント", value: `${rest.toLocaleString()}pt` },
+        { label: "現在ポイント", value: `${currentPoints.toLocaleString()}${unit}` },
+        { label: "必要ポイント", value: `${requiredTotal.toLocaleString()}${unit}` },
+        { label: "残りポイント", value: `${rest.toLocaleString()}${unit}` },
         { label: "残り日数", value: `${remainingDays}日` },
       ],
       rows: schedule.map((day, i) => ({
         date: `${formatDate(day.date)}（${weekdayOf(day.date)}）`,
         note: i === 0 ? `${startHour}時開始` : i === schedule.length - 1 ? `${endHour}時終了` : undefined,
-        target: `${day.target.toLocaleString()}pt`,
-        cumulative: `${day.cumulative.toLocaleString()}pt`,
+        target: `${day.target.toLocaleString()}${unit}`,
+        cumulative: `${day.cumulative.toLocaleString()}${unit}`,
         highlight: day.date === today,
       })),
     });
@@ -244,12 +247,12 @@ return (
       {exchangeStatus === "交換期間中" && (
         <p role="alert" className="mt-5 rounded-sm border-2 border-notebook-red bg-notebook-red px-4 py-3 text-center text-base font-extrabold text-white">
           イベントは終了しました。<br />
-          交換はあと{exchangeLeftDays}日（{exchangeDate} {exchangeTime}まで）
+          {deadlineLabel}はあと{exchangeLeftDays}日（{exchangeDate} {exchangeTime}まで）
         </p>
       )}
       {exchangeStatus === "交換終了" && (
         <p className="mt-5 rounded-sm border border-notebook-line bg-notebook-beige px-4 py-3 text-center text-base font-bold text-notebook-muted">
-          このイベントの交換期間は終了しました。
+          このイベントの{deadlineLabel}期間は終了しました。
         </p>
       )}
       <div className="px-1 pt-6 pb-1">
@@ -289,7 +292,7 @@ return (
             onChange={(e) => setCurrentPoints(Math.max(0, Number(e.target.value)))}
             className="min-h-14 w-full min-w-0 bg-transparent text-2xl font-bold outline-none"
           />
-          <span className="text-notebook-muted">pt</span>
+          <span className="text-notebook-muted">{unit}</span>
         </div>
         <p className="mt-2 text-xs text-notebook-muted">ゲーム内の所持ポイントを入力してください。</p>
       </section>
@@ -353,15 +356,15 @@ return (
           <span aria-hidden="true" className="ml-auto -rotate-6 border-2 border-notebook-red px-1 text-xs font-bold text-notebook-red">目安</span>
         </div>
         <dl className="grid grid-cols-2 gap-4 border-b border-dashed border-notebook-line pb-5">
-          <div><dt className="text-xs text-notebook-muted">現在ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{currentPoints.toLocaleString()}<span className="ml-1 text-xs font-normal">pt</span></dd></div>
-          <div><dt className="text-xs text-notebook-muted">必要ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{requiredTotal.toLocaleString()}<span className="ml-1 text-xs font-normal">pt</span></dd></div>
-          <div><dt className="text-xs text-notebook-muted">残りポイント</dt><dd className="mt-1 text-lg font-bold break-all">{rest.toLocaleString()}<span className="ml-1 text-xs font-normal">pt</span></dd></div>
+          <div><dt className="text-xs text-notebook-muted">現在ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{currentPoints.toLocaleString()}<span className="ml-1 text-xs font-normal">{unit}</span></dd></div>
+          <div><dt className="text-xs text-notebook-muted">必要ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{requiredTotal.toLocaleString()}<span className="ml-1 text-xs font-normal">{unit}</span></dd></div>
+          <div><dt className="text-xs text-notebook-muted">残りポイント</dt><dd className="mt-1 text-lg font-bold break-all">{rest.toLocaleString()}<span className="ml-1 text-xs font-normal">{unit}</span></dd></div>
           <div><dt className="text-xs text-notebook-muted">残り日数</dt><dd className="mt-1 text-lg font-bold">{remainingDays}<span className="ml-1 text-xs font-normal">日</span></dd></div>
         </dl>
         <div className="py-6 text-center">
           <p className="font-bold">1日の目安ポイント</p>
           <p className="my-2 text-4xl leading-tight font-extrabold break-all text-notebook-red sm:text-5xl">
-            {dailyQuota === 0 ? "達成済み" : <>{dailyQuota.toLocaleString()}<span className="ml-1 text-lg">pt</span></>}
+            {dailyQuota === 0 ? "達成済み" : <>{dailyQuota.toLocaleString()}<span className="ml-1 text-lg">{unit}</span></>}
           </p>
           {firstDayText && <p className="text-xs text-notebook-muted">({firstDayText})</p>}
           {lastDayText && <p className="text-xs text-notebook-muted">({lastDayText})</p>}
@@ -402,8 +405,8 @@ return (
                     {day.date === days[0].date && <span className="block text-xs text-notebook-muted">（{Number(event.start.slice(11, 13))}時開始）</span>}
                     {day.date === days[days.length - 1].date && <span className="block text-xs text-notebook-muted">（{Number(event.end.slice(11, 13))}時終了）</span>}
                   </td>
-                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.target.toLocaleString()}pt</td>
-                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.cumulative.toLocaleString()}pt</td>
+                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.target.toLocaleString()}{unit}</td>
+                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.cumulative.toLocaleString()}{unit}</td>
                 </tr>
               ))}
             </tbody>

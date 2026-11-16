@@ -3,7 +3,7 @@
 // トップの「イベントノルマ計算ツール」のボタン
 // 開いた人のブラウザの時刻で、開催中・交換期間中を出し分ける（トップは前もって作るページなので、ここで判定する）
 import Link from "next/link";
-import { events, shortDate, type EventData } from "@/lib/events";
+import { shortDate, type EventData } from "@/lib/events";
 import { eventStatusText, getEventPhase, pickTopEvents, type EventPhase } from "@/lib/eventStatus";
 import { useNow } from "@/lib/useNow";
 
@@ -19,7 +19,8 @@ function buttonLabel(name: string, phase: EventPhase | null) {
   return `${name}のノルマを計算する`;
 }
 
-export function TopEventButtons() {
+// イベント一覧はトップのページ（サーバー側）から受け取る（events.ts か DB か、どちらから読んだものでもよい）
+export function TopEventButtons({ events }: { events: EventData[] }) {
   const now = useNow();
   return <TopEventButtonsView events={events} now={now} />;
 }

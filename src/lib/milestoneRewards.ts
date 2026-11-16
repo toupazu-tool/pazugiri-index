@@ -18,13 +18,13 @@ export function parseMilestoneTarget(raw: string | null, milestones: MilestoneRe
 }
 
 // 目標の番号から、共通部分に渡す目標を作る
-export function calcMilestoneTarget(target: number, milestones: MilestoneReward[]): RewardTarget {
+export function calcMilestoneTarget(target: number, milestones: MilestoneReward[], unit = "pt"): RewardTarget {
   const sorted = sortMilestones(milestones);
   const goal = sorted[target];
   return {
     requiredTotal: goal?.requiredPoints ?? 0,
     milestones: sorted.map((m) => ({ label: m.name, points: m.requiredPoints })),
-    goalLabel: goal ? `${goal.name}（${goal.requiredPoints.toLocaleString("ja-JP")}pt）` : undefined,
+    goalLabel: goal ? `${goal.name}（${goal.requiredPoints.toLocaleString("ja-JP")}${unit}）` : undefined,
   };
 }
 

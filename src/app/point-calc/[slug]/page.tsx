@@ -1,21 +1,21 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PointCalc } from "@/components/PointCalc";
-import { events, getEvent } from "@/lib/events";
+import { getEventBySlug, getEvents } from "@/lib/eventSource";
 import { pageMeta, site, tool, toolTitle } from "@/lib/site";
 
 // [slug] はURLの一部を変数として受け取るフォルダ名
 // （PHPの $_GET['event'] のように、/point-calc/jigoku-meguri-2026 の「jigoku-meguri-2026」が入る）
 
 // ビルドのときに、イベントの数だけページを先に作っておく
-export function generateStaticParams() {
-  return events.map((event) => ({ slug: event.slug }));
+export async function generateStaticParams() {
+  return (await getEvents()).map((event) => ({ slug: event.slug }));
 }
 
 // イベントごとの title や説明文
 export async function generateMetadata({ params }: PageProps<"/point-calc/[slug]">) {
   const { slug } = await params;
-  const event = getEvent(slug);
+  const event = await getEventBySlug(slug);
   if (!event) return {};
   return pageMeta(toolTitle(event.name), tool.description, `/point-calc/${event.slug}`);
 }
@@ -26,7 +26,7 @@ async function PointCalcForSlug({
   params,
 }: Pick<PageProps<"/point-calc/[slug]">, "params">) {
   const { slug } = await params;
-  const event = getEvent(slug);
+  const event = await getEventBySlug(slug);
   if (!event) notFound(); // 無いイベントは「ページが見つかりません」にする
 
   // 検索エンジンやAI検索向けに「これは無料のWebツールです」と伝える情報

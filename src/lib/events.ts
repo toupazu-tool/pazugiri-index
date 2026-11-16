@@ -1,6 +1,6 @@
 // イベントのデータ（PHPで言うと、イベント一覧の配列をまとめた config ファイル）
 // 新しいイベントが来たら、配列の先頭に1つ足すだけでページが増える
-import { sampleEvents } from "./sampleEvents";
+// （DB を使うようになったら、ここは DB が使えないときの予備になる）
 
 export type Reward = {
   name: string;
@@ -25,7 +25,11 @@ type EventBase = {
   category: string;
   start: string;
   end: string;
+  unit?: string; // ポイントの単位（大討伐は「体」など）。書かなければ pt
 };
+
+// 画面に出すポイントの単位
+export const unitOf = (event: EventData) => event.unit ?? "pt";
 
 // イベントの形（報酬の画面テンプレートがこれで切り替わる。src/components/rewards/index.ts）
 // exchange：交換所型（ポイントで報酬を交換する）
@@ -37,6 +41,7 @@ export type ExchangeEvent = EventBase & {
 // milestone：ポイント到達型（ためたポイントで報酬がもらえる）
 export type MilestoneEvent = EventBase & {
   type: "milestone";
+  rewardEnd?: string; // 報酬の受け取り期限（わかれば）
   milestones: MilestoneReward[];
 };
 
@@ -84,15 +89,7 @@ export const events: EventData[] = [
   },
 ];
 
-// slug からイベントを探す（PHPの array_filter で1件取り出すイメージ）
-// 開発中（npm run dev）だけ、画面確認用の仮イベント（sampleEvents.ts）も探す。本番には出ない
-export function getEvent(slug: string) {
-  const list = process.env.NODE_ENV === "development" ? [...events, ...sampleEvents] : events;
-  return list.find((event) => event.slug === slug);
-}
-
-// いちばん新しいイベント（配列の先頭）
-export const latestEvent = events[0];
+// イベントを探す・一覧を取るのは src/lib/eventSource.ts（events.ts か DB かを切り替える）
 
 // 「11/4」のような短い日付
 export function shortDate(iso: string) {

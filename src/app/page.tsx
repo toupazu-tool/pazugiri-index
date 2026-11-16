@@ -2,12 +2,17 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TopEventButtons } from "@/components/TopEventButtons";
+import { getEvents } from "@/lib/eventSource";
 import { site } from "@/lib/site";
 
 const cardClass = "rounded-2xl border border-notebook-line bg-notebook-paper px-4 py-6 shadow-[0_4px_8px_rgba(90,70,48,0.3)] sm:p-6";
 
 // サイトのトップページ（ぱずぎり目録の入口）。ツールが増えたらここにカードを足す
-export default function Home() {
+export default async function Home() {
+  // ボタンに要るのは名前と日時だけなので、報酬の一覧は外して渡す（ブラウザに送る量を減らす）
+  const topEvents = (await getEvents()).map((event) =>
+    event.type === "exchange" ? { ...event, rewards: [] } : { ...event, milestones: [] },
+  );
   return (
     <>
       <SiteHeader />
@@ -24,7 +29,7 @@ export default function Home() {
           <p className="mt-3">欲しい報酬を選ぶと、1日あたりのノルマと日ごとの予定が分かります。表は画像で保存できます。</p>
 
           {/* 開催中のイベント（＋交換期間中のイベント）へ1タップで行けるボタン */}
-          <TopEventButtons />
+          <TopEventButtons events={topEvents} />
           <p className="mt-3 text-right">
             <Link href="/point-calc" className="text-notebook-green underline underline-offset-4">ほかのイベントを見る</Link>
           </p>

@@ -1,5 +1,5 @@
 // 画面確認用の仮イベント。開発中（npm run dev）だけ /point-calc/sample-point-reach で開ける
-// 本番のページ・一覧・サイトマップには出ない（events.ts の getEvent を参照）
+// 本番のページ・一覧・サイトマップには出ない（eventSource.ts の getEventBySlug を参照）
 // 報酬の名前・ポイントはすべて仮。本物のデータではない
 import type { EventData } from "./events";
 

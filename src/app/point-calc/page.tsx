@@ -2,15 +2,17 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { EventStatusLabel } from "@/components/TopEventButtons";
-import { events, shortDate } from "@/lib/events";
+import { shortDate } from "@/lib/events";
+import { getEvents } from "@/lib/eventSource";
 import { pageMeta, site, tool } from "@/lib/site";
 
 export const metadata = pageMeta(`${tool.title}｜イベント一覧｜${site.name}`, tool.description, "/point-calc");
 
 const cardClass = "rounded-2xl border border-notebook-line bg-notebook-paper px-4 py-5 shadow-[0_4px_8px_rgba(90,70,48,0.3)] sm:p-6";
 
-// イベントの一覧ページ。events.ts に足したイベントが自動で並ぶ
-export default function PointCalcListPage() {
+// イベントの一覧ページ。events.ts（または DB）のイベントが自動で並ぶ
+export default async function PointCalcListPage() {
+  const events = await getEvents();
   return (
     <>
       <SiteHeader />

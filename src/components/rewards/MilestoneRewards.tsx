@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { EventData } from "@/lib/events";
+import { unitOf, type EventData } from "@/lib/events";
 import { calcMilestoneTarget, countReached, parseMilestoneTarget, sortMilestones } from "@/lib/milestoneRewards";
 import type { RewardTemplate, RewardTemplateProps } from "./types";
 
@@ -11,6 +11,7 @@ function MilestoneRewards({ event, value, onChange, currentPoints }: RewardTempl
   const milestones = milestonesOf(event);
   const target = parseMilestoneTarget(value, milestones);
   const reached = countReached(currentPoints, milestones);
+  const unit = unitOf(event);
 
   return (
     <section aria-labelledby="rewards" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
@@ -36,7 +37,7 @@ function MilestoneRewards({ event, value, onChange, currentPoints }: RewardTempl
               <button
                 type="button"
                 aria-pressed={isTarget}
-                aria-label={`${m.name}（${m.requiredPoints.toLocaleString()}pt）を目標にする`}
+                aria-label={`${m.name}（${m.requiredPoints.toLocaleString()}${unit}）を目標にする`}
                 onClick={() => onChange(String(i))}
                 className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${
                   isTarget
@@ -70,7 +71,7 @@ function MilestoneRewards({ event, value, onChange, currentPoints }: RewardTempl
                   {isTarget && <span className="-rotate-6 border-2 border-notebook-red px-1 text-notebook-red">目標</span>}
                   {isReached
                     ? <span className="rounded-full bg-notebook-green px-2 py-1 text-white">✓ もらえた</span>
-                    : <span className="whitespace-nowrap text-notebook-muted">あと{left.toLocaleString()}pt</span>}
+                    : <span className="whitespace-nowrap text-notebook-muted">あと{left.toLocaleString()}{unit}</span>}
                 </span>
               </button>
             </li>
@@ -87,7 +88,7 @@ export const milestoneTemplate: RewardTemplate = {
   normalize: (raw, event) => String(parseMilestoneTarget(raw, milestonesOf(event))),
   calcTarget: (value, event) => {
     const milestones = milestonesOf(event);
-    return calcMilestoneTarget(parseMilestoneTarget(value, milestones), milestones);
+    return calcMilestoneTarget(parseMilestoneTarget(value, milestones), milestones, unitOf(event));
   },
   doneMessage: "目標の報酬に到達済みです！",
   Component: MilestoneRewards,
