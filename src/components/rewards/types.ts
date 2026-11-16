@@ -7,7 +7,8 @@ export type RewardTemplateProps = {
   event: EventData;
   value: string; // 選んだ内容（共有URLと同じ文字の形）
   onChange: (value: string) => void;
-  exchangeText: string; // 「交換は◯/◯ ◯:◯まで」
+  currentPoints: number; // 今のポイント（到達型で「もらえた」の印に使う）
+  exchangeText: string; // 「交換は◯/◯ ◯:◯まで」（交換期限があるイベントだけ。ないときは空）
 };
 
 // イベントの形ごとのテンプレート（PHPでいう、種類ごとに include するファイル1つ分）
@@ -18,6 +19,8 @@ export type RewardTemplate = {
   normalize: (raw: string | null, event: EventData) => string;
   // 選んだ内容から、共通部分に渡す目標を作る
   calcTarget: (value: string, event: EventData) => RewardTarget;
+  // 目標に届いているときの共有テキスト
+  doneMessage: string;
   // 報酬を選ぶ画面
   Component: (props: RewardTemplateProps) => ReactNode;
 };

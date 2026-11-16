@@ -1,5 +1,6 @@
 // イベントのデータ（PHPで言うと、イベント一覧の配列をまとめた config ファイル）
 // 新しいイベントが来たら、配列の先頭に1つ足すだけでページが増える
+import { sampleEvents } from "./sampleEvents";
 
 export type Reward = {
   name: string;
@@ -9,20 +10,38 @@ export type Reward = {
   amount: number;
 };
 
-// イベントの形（報酬の画面テンプレートがこれで切り替わる。src/components/rewards/index.ts）
-// exchange：交換所型（ポイントで報酬を交換する）
-export type EventType = "exchange";
+// ポイント到達型の報酬（◯ptためるともらえる）
+export type MilestoneReward = {
+  name: string;
+  requiredPoints: number; // もらえるポイント（累計）
+  image: string;
+  amount: number;
+};
 
-export type EventData = {
+// どのイベントにもある項目
+type EventBase = {
   slug: string; // URLに使う名前（/point-calc/◯◯）
   name: string;
-  type: EventType;
   category: string;
   start: string;
   end: string;
-  exchangeEnd: string;
+};
+
+// イベントの形（報酬の画面テンプレートがこれで切り替わる。src/components/rewards/index.ts）
+// exchange：交換所型（ポイントで報酬を交換する）
+export type ExchangeEvent = EventBase & {
+  type: "exchange";
+  exchangeEnd: string; // 交換期限
   rewards: Reward[];
 };
+// milestone：ポイント到達型（ためたポイントで報酬がもらえる）
+export type MilestoneEvent = EventBase & {
+  type: "milestone";
+  milestones: MilestoneReward[];
+};
+
+export type EventData = ExchangeEvent | MilestoneEvent;
+export type EventType = EventData["type"];
 
 export const events: EventData[] = [
   {
@@ -66,8 +85,10 @@ export const events: EventData[] = [
 ];
 
 // slug からイベントを探す（PHPの array_filter で1件取り出すイメージ）
+// 開発中（npm run dev）だけ、画面確認用の仮イベント（sampleEvents.ts）も探す。本番には出ない
 export function getEvent(slug: string) {
-  return events.find((event) => event.slug === slug);
+  const list = process.env.NODE_ENV === "development" ? [...events, ...sampleEvents] : events;
+  return list.find((event) => event.slug === slug);
 }
 
 // いちばん新しいイベント（配列の先頭）

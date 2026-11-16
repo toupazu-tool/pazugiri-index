@@ -1,10 +1,14 @@
 import Image from "next/image";
 import { calcExchangeTarget, formatExchangeCounts, parseExchangeCounts } from "@/lib/exchangeRewards";
+import type { EventData } from "@/lib/events";
 import type { RewardTemplate, RewardTemplateProps } from "./types";
+
+// 交換所型のイベントなら報酬一覧、ほかの形なら空
+const rewardsOf = (event: EventData) => (event.type === "exchange" ? event.rewards : []);
 
 // 交換所型の「報酬の希望数」の枠
 function ExchangeRewards({ event, value, onChange, exchangeText }: RewardTemplateProps) {
-  const rewards = event.rewards;
+  const rewards = rewardsOf(event);
   const counts = parseExchangeCounts(value, rewards);
   const setCounts = (next: number[]) => onChange(formatExchangeCounts(next));
 
@@ -115,7 +119,8 @@ function ExchangeRewards({ event, value, onChange, exchangeText }: RewardTemplat
 // 交換所型のテンプレート
 export const exchangeTemplate: RewardTemplate = {
   paramName: "counts",
-  normalize: (raw, event) => formatExchangeCounts(parseExchangeCounts(raw, event.rewards)),
-  calcTarget: (value, event) => calcExchangeTarget(parseExchangeCounts(value, event.rewards), event.rewards),
+  normalize: (raw, event) => formatExchangeCounts(parseExchangeCounts(raw, rewardsOf(event))),
+  calcTarget: (value, event) => calcExchangeTarget(parseExchangeCounts(value, rewardsOf(event)), rewardsOf(event)),
+  doneMessage: "報酬交換の目標を達成済みです！",
   Component: ExchangeRewards,
 };

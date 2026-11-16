@@ -30,7 +30,7 @@ export default function PointCalcListPage() {
                 <span className="inline-block rounded-sm bg-notebook-green px-2 py-1 text-xs font-bold text-white">{event.category}</span>
                 <span className="mt-2 block text-xl font-extrabold tracking-widest">{event.name}</span>
                 <span className="mt-1 block text-notebook-muted">
-                  {event.start.slice(0, 4)}年 {shortDate(event.start)}〜{shortDate(event.end)}（交換は{shortDate(event.exchangeEnd)}まで）
+                  {event.start.slice(0, 4)}年 {shortDate(event.start)}〜{shortDate(event.end)}{event.type === "exchange" && `（交換は${shortDate(event.exchangeEnd)}まで）`}
                 </span>
               </Link>
             </li>

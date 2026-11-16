@@ -166,19 +166,21 @@ const formatDate = (date: string) => {
   const [, m, d] = date.split("-");
   return `${Number(m)}/${Number(d)}`;
 };
-//交換期限（表示用の文字と、イベント後の残り日数）
-const exchangeEnd = new Date(event.exchangeEnd);
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 // "2026-11-08" → "日"（日本時間の正午で曜日を出すので、ずれない）
 const weekdayOf = (date: string) => weekdays[new Date(`${date}T12:00:00+09:00`).getDay()];
-const exchangeDate = `${formatDate(event.exchangeEnd.slice(0, 10))}（${weekdays[new Date(`${event.exchangeEnd.slice(0, 10)}T12:00:00+09:00`).getDay()]}）`;
+//交換期限（交換所型だけ。表示用の文字と、イベント後の残り日数）
+const exchangeEndIso = event.type === "exchange" ? event.exchangeEnd : null;
+const exchangeEnd = exchangeEndIso ? new Date(exchangeEndIso) : null;
+const exchangeDate = exchangeEndIso ? `${formatDate(exchangeEndIso.slice(0, 10))}（${weekdayOf(exchangeEndIso.slice(0, 10))}）` : "";
 // 13:00終了なら「12:59まで」と表示する（1分前の時刻を作る）
-const lastMinute = new Date(exchangeEnd.getTime() - 60 * 1000);
-const exchangeTime = lastMinute.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" });
-const exchangeText = `交換は${exchangeDate} ${exchangeTime}まで`;
+const exchangeTime = exchangeEnd
+  ? new Date(exchangeEnd.getTime() - 60 * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })
+  : "";
+const exchangeText = exchangeEnd ? `交換は${exchangeDate} ${exchangeTime}まで` : "";
 let exchangeStatus = ""; // イベント後だけ使う：交換期間中 / 交換終了
 let exchangeLeftDays = 0;
-if (now && now > end) {
+if (exchangeEnd && now && now > end) {
   if (now < exchangeEnd) {
     exchangeStatus = "交換期間中";
     exchangeLeftDays = Math.ceil((exchangeEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -188,7 +190,7 @@ if (now && now > end) {
 }
 
 const shareText = dailyQuota === 0
-  ? "報酬交換の目標を達成済みです！"
+  ? template.doneMessage
   : [
     `選んだ日数：${remainingDays}日`,
     `現在ポイント：${currentPoints.toLocaleString()}pt`,
@@ -242,7 +244,7 @@ return (
           {formatDate(event.start.slice(0, 10))} {event.start.slice(11, 16)} 〜 {formatDate(event.end.slice(0, 10))} {event.end.slice(11, 16)}
         </p>
         {status && <p className="mt-3 inline-block -rotate-2 rounded-sm border border-notebook-red px-2 py-1 text-xs font-bold text-notebook-red">{status}</p>}
-        <p className="mt-3 text-sm font-extrabold text-notebook-red">⚠ {exchangeText}</p>
+        {exchangeText && <p className="mt-3 text-sm font-extrabold text-notebook-red">⚠ {exchangeText}</p>}
       </section>
 
       <section className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
@@ -267,7 +269,7 @@ return (
       </section>
 
       {/* 報酬の選び方は、イベントの形ごとのテンプレート（src/components/rewards/） */}
-      <template.Component event={event} value={selection} onChange={setSelection} exchangeText={exchangeText} />
+      <template.Component event={event} value={selection} onChange={setSelection} currentPoints={currentPoints} exchangeText={exchangeText} />
 
       <section aria-labelledby="playable-days" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
