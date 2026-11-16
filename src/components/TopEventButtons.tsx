@@ -1,0 +1,95 @@
+"use client";
+
+// トップの「イベントノルマ計算ツール」のボタン
+// 開いた人のブラウザの時刻で、開催中・交換期間中を出し分ける（トップは前もって作るページなので、ここで判定する）
+import Link from "next/link";
+import { formatShortPeriod } from "@/lib/dateFormat";
+import type { EventData } from "@/lib/events";
+import { deadlineText, eventStatusText, getEventPhase, pickTopEvents, type EventPhase } from "@/lib/eventStatus";
+import { useNow } from "@/lib/useNow";
+
+// 開催中・開催前：緑で塗ったボタン（主役）
+const filledClass = "flex min-h-12 flex-col items-center justify-center rounded-xl bg-notebook-green px-4 py-2 text-center font-bold text-white shadow-md transition hover:opacity-90";
+// 交換期間中・終了：白地に緑の枠（まだ使えることが分かるよう、グレーにはしない）
+const outlineClass = "flex min-h-11 flex-col items-center justify-center rounded-xl border-2 border-notebook-green bg-white px-4 py-2 text-center font-bold text-notebook-green transition hover:bg-notebook-beige";
+
+// ボタンの文言。終わったあとはノルマより交換が用事なので言い方を変える
+function buttonLabel(name: string, phase: EventPhase | null) {
+  if (phase === "exchange") return `${name}の交換を確認する`;
+  if (phase === "ended") return `${name}のページを見る`;
+  return `${name}のノルマを計算する`;
+}
+
+// イベント一覧はトップのページ（サーバー側）から受け取る（events.ts か DB か、どちらから読んだものでもよい）
+export function TopEventButtons({ events }: { events: EventData[] }) {
+  const now = useNow();
+  return <TopEventButtonsView events={events} now={now} />;
+}
+
+// 見た目の部分。イベント一覧と時刻を外から受け取る（画面の確認やテストで、好きな日時にできるように）
+export function TopEventButtonsView({ events, now }: { events: EventData[]; now: Date | null }) {
+  // 時刻が入るまで（サーバーで作るとき・開いた直後の一瞬）は、どのイベントを出すか決められないので、
+  // 同じ高さの空の枠だけ出す（開催前のイベントが一瞬見えないように。高さをそろえて画面がずれないように）
+  if (!now) {
+    return (
+      <div className="mt-4 space-y-2" aria-hidden="true">
+        <div className="min-h-14 rounded-xl bg-notebook-beige" />
+      </div>
+    );
+  }
+  const { main, exchange } = pickTopEvents(events, now);
+  if (!main) return null;
+  const mainPhase = getEventPhase(main, now);
+  const mainFilled = mainPhase === "ongoing" || mainPhase === "upcoming";
+
+  return (
+    <div className="mt-4 space-y-2">
+      <Link href={`/point-calc/${main.slug}`} className={mainFilled ? filledClass : outlineClass}>
+        <span className="text-base">{buttonLabel(main.name, mainPhase)}</span>
+        {/* 期間と状態は2行に分ける（スマホの幅で途中から折り返さないように） */}
+        <span className={`text-xs ${mainFilled ? "text-white/90" : "text-notebook-muted"}`}>{formatShortPeriod(main.start, main.end)}</span>
+        <span className={`text-xs ${mainFilled ? "text-white" : "text-notebook-red"}`}>{eventStatusText(main, now)}</span>
+        {mainPhase === "exchange" && <span className="text-xs text-notebook-red">{deadlineText(main)}</span>}
+      </Link>
+      {exchange.map((event: EventData) => (
+        <Link key={event.slug} href={`/point-calc/${event.slug}`} className={outlineClass}>
+          <span className="text-sm">{buttonLabel(event.name, "exchange")}</span>
+          {/* 状態と期限は2行に分ける（スマホの幅で途中から折り返さないように） */}
+          <span className="text-xs text-notebook-red">{eventStatusText(event, now)}</span>
+          <span className="text-xs text-notebook-muted">{deadlineText(event)}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+// イベント一覧のカード。終わったイベント（交換・受け取りも終わったもの）は背景を少し落ち着いた色にする
+const listCardClass = "block rounded-2xl border border-notebook-line px-4 py-5 shadow-[0_4px_8px_rgba(90,70,48,0.3)] transition hover:-translate-y-0.5 sm:p-6";
+export function EventListCard({ event, children }: { event: EventData; children: React.ReactNode }) {
+  const now = useNow();
+  const ended = now !== null && getEventPhase(event, now) === "ended";
+  return (
+    <Link href={`/point-calc/${event.slug}`} className={`${listCardClass} ${ended ? "bg-notebook-beige" : "bg-notebook-paper"}`}>
+      {children}
+      {/* 開催中・交換期間中などの状態（開いた人のブラウザの時刻で出す） */}
+      <EventStatusLabel event={event} />
+    </Link>
+  );
+}
+
+// イベント一覧のカードに出す、小さな状態のラベル
+export function EventStatusLabel({ event }: { event: EventData }) {
+  const now = useNow();
+  if (!now) return null;
+  const phase = getEventPhase(event, now);
+  const color = phase === "ongoing"
+    ? "border-notebook-red text-notebook-red"
+    : phase === "exchange"
+      ? "border-notebook-green text-notebook-green"
+      : "border-notebook-line text-notebook-muted";
+  return (
+    <span className={`mt-2 inline-block -rotate-2 rounded-sm border px-2 py-0.5 text-xs font-bold ${color}`}>
+      {eventStatusText(event, now)}
+    </span>
+  );
+}

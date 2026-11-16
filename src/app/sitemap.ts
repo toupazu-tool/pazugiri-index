@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
-import { events } from "@/lib/events";
+import { getEvents } from "@/lib/eventSource";
 import { site } from "@/lib/site";
 
-// サイトのページ一覧（イベントは events.ts から自動で足される）
-export default function sitemap(): MetadataRoute.Sitemap {
+// サイトのページ一覧（イベントは events.ts または DB から自動で足される）
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const events = await getEvents();
   return [
     { url: site.url, changeFrequency: "weekly", priority: 1 },
     { url: `${site.url}/point-calc`, changeFrequency: "weekly", priority: 0.8 },

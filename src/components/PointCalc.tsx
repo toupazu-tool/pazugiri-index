@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect } from "react";
+import { useNow } from "@/lib/useNow";
 import Image from "next/image";
-import { calcDailyQuota, calcRemainingDays, calcRequiredTotal, calcSchedule } from "@/lib/quota";
-import type { EventData } from "@/lib/events";
+import { calcDailyQuota, calcRemainingDays, calcSchedule } from "@/lib/quota";
+import { rewardTemplates } from "@/components/rewards";
+import { renderScheduleTablePngBlob, saveScheduleImage, scheduleImageFilename } from "@/lib/scheduleTableImage";
+import { unitOf, type EventData } from "@/lib/events";
+import { formatEnd, formatPeriodParts } from "@/lib/dateFormat";
 import { site } from "@/lib/site";
 import { sendGAEvent } from "@next/third-parties/google";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -30,24 +34,13 @@ function listEventDates(startIso: string, endIso: string): string[] {
 const toTokyoDate = (date: Date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(date);
 
-// 1分ごとに「今」を更新する（残り時間の表示用）
-const subscribeMinute = (onChange: () => void) => {
-  const id = setInterval(onChange, 60_000);
-  return () => clearInterval(id);
-};
-const getMinute = () => Math.floor(Date.now() / 60000);
-const getServerMinute = () => null;
-
-// ブラウザでは1分ごとの「今」を返し、サーバーではまだ時刻がないので null
-function useNow(): Date | null {
-  const m = useSyncExternalStore<number | null>(subscribeMinute, getMinute, getServerMinute);
-  return m === null ? null : new Date(m * 60000);
-}
 
 // 計算ツール本体。どのイベントかは event で受け取る（PHPで関数に引数を渡すのと同じ）
 export function PointCalc({ event }: { event: EventData }) {
-//報酬データ（maxCount は交換所の「あと◯回」）。イベントデータから受け取る
-const rewards = event.rewards;
+//報酬の画面テンプレート（イベントの形で切り替える。src/components/rewards/index.ts）
+const template = rewardTemplates[event.type];
+//ポイントの単位（大討伐は「体」など）
+const unit = unitOf(event);
 //入力内容をブラウザに保存するときの名前（イベントごとに分ける）
 const STORAGE_KEY = `toupazu-point-calc:${event.slug}`;
 const eventDays = listEventDates(event.start, event.end).map((date) => ({
@@ -57,9 +50,12 @@ const eventDays = listEventDates(event.start, event.end).map((date) => ({
 const [days, setDays] = useState(eventDays);
 const [loaded, setLoaded] = useState(false); // 保存データを読み終わったか
 const [currentPoints, setCurrentPoints] = useState(0);
-const [counts, setCounts] = useState(rewards.map(() => 0));
+//報酬の選んだ内容（共有URLと同じ文字の形。中身はテンプレートが決める）
+const [selection, setSelection] = useState(() => template.normalize(null, event));
 const now = useNow();
 const today = now ? toTokyoDate(now) : "";
+const [imageBusy, setImageBusy] = useState(false); // 画像を作っている途中
+const [imageHint, setImageHint] = useState(""); // 画像が作れなかったときのお知らせ
 
 useEffect(() => {
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -68,7 +64,7 @@ useEffect(() => {
 
   const params = new URLSearchParams(window.location.search);
   //共有URLに値があればURLを優先。なければ前回ブラウザに保存した内容を使う（PHPの $_GET → $_COOKIE の順に見るイメージ）
-  const hasUrl = params.has("current") || params.has("counts") || params.has("days");
+  const hasUrl = params.has("current") || params.has(template.paramName) || params.has("days");
   let saved: Record<string, string> = {};
   try {
     saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
@@ -83,17 +79,9 @@ useEffect(() => {
     if (Number.isFinite(n)) setCurrentPoints(Math.max(0, n));
   }
 
-  const countsParam = pick("counts");
-  if (countsParam) {
-    const values = countsParam.split(",");
-    setCounts(
-      rewards.map((reward, i) => {
-        const n = Number(values[i]);
-        if (!Number.isFinite(n)) return 0;   // 数字じゃなければ0
-        return Math.min(Math.max(Math.floor(n), 0), reward.maxCount); // 0〜上限に収める
-      })
-    );
-  }
+  //報酬の選んだ内容は、テンプレートが正しい形にそろえる
+  const selectionParam = pick(template.paramName);
+  if (selectionParam) setSelection(template.normalize(selectionParam, event));
 
   const daysParam = pick("days");
   //URLに指定がなければ、今日から後の日だけを選んだ状態にする
@@ -110,7 +98,7 @@ useEffect(() => {
   }
   setLoaded(true);
   /* eslint-enable react-hooks/set-state-in-effect */
-}, [STORAGE_KEY, rewards]);
+}, [STORAGE_KEY, event, template]);
 
 //入力が変わるたびにブラウザへ保存（読み込みが終わる前は保存しない）
 useEffect(() => {
@@ -120,16 +108,18 @@ useEffect(() => {
       STORAGE_KEY,
       JSON.stringify({
         current: String(currentPoints),
-        counts: counts.join(","),
+        [template.paramName]: selection,
         days: days.map((day) => (day.playable ? "1" : "0")).join(""),
       })
     );
   } catch {
     // プライベートモードなどで保存できないときは、入力の復元を諦める
   }
-}, [loaded, currentPoints, counts, days, STORAGE_KEY]);
+}, [loaded, currentPoints, selection, days, STORAGE_KEY, template]);
 
-const requiredTotal = calcRequiredTotal(rewards.map((r, i) => ({ ...r, count: counts[i] })));
+//テンプレートから受け取る目標（あとで足すグラフもこれを使う）
+const rewardTarget = template.calcTarget(selection, event);
+const requiredTotal = rewardTarget.requiredTotal;
 const remainingDays = calcRemainingDays(days);
 const dailyQuota = calcDailyQuota(requiredTotal, currentPoints, remainingDays);
 
@@ -160,29 +150,29 @@ const schedule = calcSchedule(days, currentPoints, requiredTotal);
 const lastSchedule = schedule.findLast((day) => day.target > 0);
 const firstSchedule = schedule.find((day) => day.target > 0);
 const firstDayText = dailyQuota > 0 && days[0].playable && firstSchedule?.target !== dailyQuota
-  ? `初日：${firstSchedule?.target.toLocaleString()}pt`
+  ? `初日：${firstSchedule?.target.toLocaleString()}${unit}`
   : "";
 const lastDayText = dailyQuota > 0 && lastSchedule?.target !== dailyQuota
-  ? `最終日：${lastSchedule?.target.toLocaleString()}pt`
+  ? `最終日：${lastSchedule?.target.toLocaleString()}${unit}`
   : "";
 
 const formatDate = (date: string) => {
   const [, m, d] = date.split("-");
   return `${Number(m)}/${Number(d)}`;
 };
-//交換期限（表示用の文字と、イベント後の残り日数）
-const exchangeEnd = new Date(event.exchangeEnd);
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 // "2026-11-08" → "日"（日本時間の正午で曜日を出すので、ずれない）
 const weekdayOf = (date: string) => weekdays[new Date(`${date}T12:00:00+09:00`).getDay()];
-const exchangeDate = `${formatDate(event.exchangeEnd.slice(0, 10))}（${weekdays[new Date(`${event.exchangeEnd.slice(0, 10)}T12:00:00+09:00`).getDay()]}）`;
-// 13:00終了なら「12:59まで」と表示する（1分前の時刻を作る）
-const lastMinute = new Date(exchangeEnd.getTime() - 60 * 1000);
-const exchangeTime = lastMinute.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" });
-const exchangeText = `交換は${exchangeDate} ${exchangeTime}まで`;
+//期限（交換所型は交換期限、到達型は受け取り期限。表示用の文字と、イベント後の残り日数）
+const exchangeEndIso = event.type === "exchange" ? event.exchangeEnd : event.rewardEnd ?? null;
+const deadlineLabel = event.type === "exchange" ? "交換" : "受け取り";
+const exchangeEnd = exchangeEndIso ? new Date(exchangeEndIso) : null;
+// 期限の日時は共通の書き方（src/lib/dateFormat.ts。13:00終了は12:59と書く）
+const exchangeWhen = exchangeEndIso ? formatEnd(exchangeEndIso) : "";
+const exchangeText = exchangeEndIso ? `${deadlineLabel}は${exchangeWhen}まで` : "";
 let exchangeStatus = ""; // イベント後だけ使う：交換期間中 / 交換終了
 let exchangeLeftDays = 0;
-if (now && now > end) {
+if (exchangeEnd && now && now > end) {
   if (now < exchangeEnd) {
     exchangeStatus = "交換期間中";
     exchangeLeftDays = Math.ceil((exchangeEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -192,12 +182,12 @@ if (now && now > end) {
 }
 
 const shareText = dailyQuota === 0
-  ? "報酬交換の目標を達成済みです！"
+  ? template.doneMessage
   : [
     `選んだ日数：${remainingDays}日`,
-    `現在ポイント：${currentPoints.toLocaleString()}pt`,
-    `残り${rest.toLocaleString()}pt`,
-    `1日の目安：${dailyQuota.toLocaleString()}pt`,
+    `現在ポイント：${currentPoints.toLocaleString()}${unit}`,
+    `残り${rest.toLocaleString()}${unit}`,
+    `1日の目安：${dailyQuota.toLocaleString()}${unit}`,
     firstDayText,
     lastDayText,
   ].filter((line) => line !== "").join("\n");
@@ -205,11 +195,46 @@ const shareText = dailyQuota === 0
 //共有リンク
 const params = new URLSearchParams({
   current: String(currentPoints),
-  counts: counts.join(","),
+  [template.paramName]: selection,
   days: days.map((day) => day.playable ? "1" : "0").join(""),
 });
 const shareUrl = `${site.url}/point-calc/${event.slug}?${params}#schedule`;
 const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`;
+
+//日ごとの予定を画像にして保存する（画面の予定表と同じ中身。サーバーには送らない）
+const startHour = Number(event.start.slice(11, 13));
+const endHour = Number(event.end.slice(11, 13));
+const handleSaveScheduleImage = async () => {
+  if (imageBusy) return;
+  setImageBusy(true);
+  setImageHint("");
+  try {
+    const blob = await renderScheduleTablePngBlob({
+      eventName: event.name,
+      quota: dailyQuota === 0 ? "達成済み" : `${dailyQuota.toLocaleString()}${unit}`,
+      goal: rewardTarget.goalLabel,
+      summary: [
+        { label: "現在ポイント", value: `${currentPoints.toLocaleString()}${unit}` },
+        { label: "必要ポイント", value: `${requiredTotal.toLocaleString()}${unit}` },
+        { label: "残りポイント", value: `${rest.toLocaleString()}${unit}` },
+        { label: "残り日数", value: `${remainingDays}日` },
+      ],
+      rows: schedule.map((day, i) => ({
+        date: `${formatDate(day.date)}（${weekdayOf(day.date)}）`,
+        note: i === 0 ? `${startHour}時開始` : i === schedule.length - 1 ? `${endHour}時終了` : undefined,
+        target: `${day.target.toLocaleString()}${unit}`,
+        cumulative: `${day.cumulative.toLocaleString()}${unit}`,
+        highlight: day.date === today,
+      })),
+    });
+    await saveScheduleImage(blob, scheduleImageFilename(event.slug));
+    sendGAEvent("event", "share", { method: "image_save" });
+  } catch {
+    setImageHint("画像を作れませんでした。もう一度試してみてください。");
+  } finally {
+    setImageBusy(false);
+  }
+};
 
 return (
   <>
@@ -220,12 +245,12 @@ return (
       {exchangeStatus === "交換期間中" && (
         <p role="alert" className="mt-5 rounded-sm border-2 border-notebook-red bg-notebook-red px-4 py-3 text-center text-base font-extrabold text-white">
           イベントは終了しました。<br />
-          交換はあと{exchangeLeftDays}日（{exchangeDate} {exchangeTime}まで）
+          {deadlineLabel}はあと{exchangeLeftDays}日（{exchangeWhen}まで）
         </p>
       )}
       {exchangeStatus === "交換終了" && (
         <p className="mt-5 rounded-sm border border-notebook-line bg-notebook-beige px-4 py-3 text-center text-base font-bold text-notebook-muted">
-          このイベントの交換期間は終了しました。
+          このイベントの{deadlineLabel}期間は終了しました。
         </p>
       )}
       <div className="px-1 pt-6 pb-1">
@@ -243,10 +268,10 @@ return (
         <p className={`inline-block rounded-sm px-2 py-1 text-xs font-bold ${categoryColors[event.category]?.label ?? "bg-notebook-beige text-notebook-muted"}`}>{event.category}</p>
         <h2 className="mt-3 text-2xl font-extrabold tracking-widest">{event.name}</h2>
         <p className="mt-1 text-xs text-notebook-muted">
-          {formatDate(event.start.slice(0, 10))} {event.start.slice(11, 16)} 〜 {formatDate(event.end.slice(0, 10))} {event.end.slice(11, 16)}
+          {formatPeriodParts(event.start, event.end).map((part) => <span key={part} className="inline-block">{part}</span>)}
         </p>
         {status && <p className="mt-3 inline-block -rotate-2 rounded-sm border border-notebook-red px-2 py-1 text-xs font-bold text-notebook-red">{status}</p>}
-        <p className="mt-3 text-sm font-extrabold text-notebook-red">⚠ {exchangeText}</p>
+        {exchangeText && <p className="mt-3 text-sm font-extrabold text-notebook-red">⚠ {exchangeText}</p>}
       </section>
 
       <section className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
@@ -265,111 +290,13 @@ return (
             onChange={(e) => setCurrentPoints(Math.max(0, Number(e.target.value)))}
             className="min-h-14 w-full min-w-0 bg-transparent text-2xl font-bold outline-none"
           />
-          <span className="text-notebook-muted">pt</span>
+          <span className="text-notebook-muted">{unit}</span>
         </div>
         <p className="mt-2 text-xs text-notebook-muted">ゲーム内の所持ポイントを入力してください。</p>
       </section>
 
-      <section aria-labelledby="rewards" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
-        <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
-          <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-notebook-red text-xs font-bold text-white">02</span>
-          <h2 id="rewards" className="text-base font-extrabold">報酬の希望数</h2>
-        </div>
-        <p className="mb-3 rounded-sm border border-brand-yellow bg-[#fff6d9] px-3 py-2 text-sm font-bold text-[#7a5a00]">⚠ {exchangeText}。忘れずに交換しよう！</p>
-        <div className="mb-1 flex flex-wrap gap-2">
-          <button type="button" onClick={() => setCounts(rewards.map((reward) => reward.maxCount))} className="min-h-11 rounded-sm border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-blue">
-            全部交換
-          </button>
-          <button type="button" onClick={() => setCounts(rewards.map(() => 0))} className="min-h-11 rounded-sm border border-notebook-line px-3 text-xs font-bold text-notebook-muted hover:bg-notebook-beige focus-visible:outline-2 focus-visible:outline-brand-blue">
-            クリア
-          </button>
-        </div>
-        {/* ゲームの交換所みたいに、3列のカードで並べる */}
-        <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {rewards.map((reward, i) => {
-            const done = reward.maxCount === 0; // 交換済み
-            const selected = counts[i] > 0; // 1個以上選んでいる
-            // 0〜上限の中に収めて保存する
-            const change = (value: number) => {
-              const next = [...counts];
-              next[i] = Math.min(reward.maxCount, Math.max(0, value));
-              setCounts(next);
-            };
-            return (
-              <li
-                key={reward.name}
-                className={`grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border-2 px-3 py-2 sm:flex sm:flex-col sm:gap-0 sm:px-1 sm:pb-2 sm:pt-3 ${
-                  done
-                    ? "border-notebook-line bg-notebook-beige opacity-60"
-                    : selected
-                      ? "border-notebook-red bg-white"
-                      : "border-notebook-line bg-white"
-                }`}
-              >
-                {/* アイコン */}
-                <div className="relative shrink-0">
-                  <Image src={reward.image} alt="" width={64} height={64} className="size-14 sm:size-20" />
-                  {reward.amount > 1 && (
-                    <span className="absolute -bottom-1 -right-2 text-lg font-extrabold text-[#5a4630] [text-shadow:0_0_2px_#fff,0_0_2px_#fff,0_0_2px_#fff]">
-                      {reward.amount}
-                    </span>
-                  )}
-                </div>
-                {/* 名前・値段・回数（スマホは左寄せで縦、PCは中央） */}
-                <div className="min-w-0 flex-1 sm:flex sm:flex-col sm:items-center">
-                <p className="text-base font-bold leading-snug sm:mt-2 sm:text-center">{reward.name}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-1 sm:mt-0 sm:flex-col sm:gap-0">
-                <p className="flex items-center gap-1 sm:mt-2 rounded-full border border-notebook-line bg-notebook-paper px-3 text-base font-extrabold">
-                  <span aria-hidden="true" className="grid size-5 place-items-center rounded-full bg-brand-yellow text-xs text-white">P</span>
-                  {reward.costPoints.toLocaleString()}
-                </p>
-                {/* 「最大◯回」バッジ */}
-                <p className="sm:mt-2">
-                  <span className="whitespace-nowrap rounded-full bg-[#6f5838] px-2 py-1 text-xs font-bold leading-6 text-white">
-                      {done ? "交換済み" : `最大${reward.maxCount}回`}
-                  </span>
-                </p>
-                </div>
-                </div>
-
-                {/* 個数を選ぶ（－ 数字 ＋） */}
-                <div className="col-span-2 flex shrink-0 items-center justify-self-end sm:mt-3">
-                  <button
-                    type="button"
-                    aria-label={`${reward.name}を1つ減らす`}
-                    disabled={done || counts[i] === 0}
-                    onClick={() => change(counts[i] - 1)}
-                    className="size-8 shrink-0 rounded-full border border-notebook-line sm:size-10 bg-notebook-paper font-bold text-notebook-muted disabled:opacity-40"
-                  >
-                    －
-                  </button>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max={reward.maxCount}
-                    aria-label={`${reward.name}の数`}
-                    disabled={done}
-                    value={counts[i] === 0 ? "" : counts[i]}
-                    placeholder="0"
-                    onChange={(e) => change(Number(e.target.value))}
-                    className="mx-2 h-8 w-10 rounded-sm sm:mx-2 sm:h-10 sm:w-12 border border-notebook-line bg-white text-center text-lg font-bold [appearance:textfield] disabled:bg-notebook-beige [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <button
-                    type="button"
-                    aria-label={`${reward.name}を1つ増やす`}
-                    disabled={done || counts[i] >= reward.maxCount}
-                    onClick={() => change(counts[i] + 1)}
-                    className="size-8 shrink-0 rounded-full border border-notebook-red sm:size-10 bg-notebook-red font-bold text-white disabled:opacity-40"
-                  >
-                    ＋
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+      {/* 報酬の選び方は、イベントの形ごとのテンプレート（src/components/rewards/） */}
+      <template.Component event={event} value={selection} onChange={setSelection} currentPoints={currentPoints} exchangeText={exchangeText} />
 
       <section aria-labelledby="playable-days" className="rounded-2xl shadow-[0_4px_8px_rgba(90,70,48,0.3)] border border-notebook-line bg-notebook-paper px-3 py-5 sm:p-5">
         <div className="mb-4 flex items-center gap-2 border-b border-notebook-line pb-3">
@@ -427,15 +354,15 @@ return (
           <span aria-hidden="true" className="ml-auto -rotate-6 border-2 border-notebook-red px-1 text-xs font-bold text-notebook-red">目安</span>
         </div>
         <dl className="grid grid-cols-2 gap-4 border-b border-dashed border-notebook-line pb-5">
-          <div><dt className="text-xs text-notebook-muted">現在ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{currentPoints.toLocaleString()}<span className="ml-1 text-xs font-normal">pt</span></dd></div>
-          <div><dt className="text-xs text-notebook-muted">必要ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{requiredTotal.toLocaleString()}<span className="ml-1 text-xs font-normal">pt</span></dd></div>
-          <div><dt className="text-xs text-notebook-muted">残りポイント</dt><dd className="mt-1 text-lg font-bold break-all">{rest.toLocaleString()}<span className="ml-1 text-xs font-normal">pt</span></dd></div>
+          <div><dt className="text-xs text-notebook-muted">現在ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{currentPoints.toLocaleString()}<span className="ml-1 text-xs font-normal">{unit}</span></dd></div>
+          <div><dt className="text-xs text-notebook-muted">必要ポイント</dt><dd className="mt-1 text-lg font-bold break-all">{requiredTotal.toLocaleString()}<span className="ml-1 text-xs font-normal">{unit}</span></dd></div>
+          <div><dt className="text-xs text-notebook-muted">残りポイント</dt><dd className="mt-1 text-lg font-bold break-all">{rest.toLocaleString()}<span className="ml-1 text-xs font-normal">{unit}</span></dd></div>
           <div><dt className="text-xs text-notebook-muted">残り日数</dt><dd className="mt-1 text-lg font-bold">{remainingDays}<span className="ml-1 text-xs font-normal">日</span></dd></div>
         </dl>
         <div className="py-6 text-center">
           <p className="font-bold">1日の目安ポイント</p>
           <p className="my-2 text-4xl leading-tight font-extrabold break-all text-notebook-red sm:text-5xl">
-            {dailyQuota === 0 ? "達成済み" : <>{dailyQuota.toLocaleString()}<span className="ml-1 text-lg">pt</span></>}
+            {dailyQuota === 0 ? "達成済み" : <>{dailyQuota.toLocaleString()}<span className="ml-1 text-lg">{unit}</span></>}
           </p>
           {firstDayText && <p className="text-xs text-notebook-muted">({firstDayText})</p>}
           {lastDayText && <p className="text-xs text-notebook-muted">({lastDayText})</p>}
@@ -476,12 +403,30 @@ return (
                     {day.date === days[0].date && <span className="block text-xs text-notebook-muted">（{Number(event.start.slice(11, 13))}時開始）</span>}
                     {day.date === days[days.length - 1].date && <span className="block text-xs text-notebook-muted">（{Number(event.end.slice(11, 13))}時終了）</span>}
                   </td>
-                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.target.toLocaleString()}pt</td>
-                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.cumulative.toLocaleString()}pt</td>
+                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.target.toLocaleString()}{unit}</td>
+                  <td className="border border-brand-yellow/50 px-2 py-3 whitespace-nowrap">{day.cumulative.toLocaleString()}{unit}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* 表を画像保存（絵巻守Lv早見表と同じ配置） */}
+        <div className="mt-4 space-y-2">
+          <h3 className="text-center text-sm font-extrabold">表を画像保存</h3>
+          <button
+            type="button"
+            onClick={() => { void handleSaveScheduleImage(); }}
+            disabled={imageBusy}
+            className="flex min-h-12 w-full items-center justify-center rounded-xl border border-notebook-line bg-white px-3 text-sm font-bold text-notebook-muted hover:bg-notebook-beige focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-50"
+          >
+            {imageBusy ? "画像を作っています…" : "日ごとの予定を保存"}
+          </button>
+          {imageHint && (
+            <p role="status" className="rounded-sm border border-brand-yellow bg-[#fff6d9] px-3 py-2 text-center text-xs font-bold text-[#7a5a00]">
+              {imageHint}
+            </p>
+          )}
         </div>
       </section>
     </main>

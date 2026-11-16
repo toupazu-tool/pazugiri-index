@@ -1,5 +1,6 @@
 // イベントのデータ（PHPで言うと、イベント一覧の配列をまとめた config ファイル）
 // 新しいイベントが来たら、配列の先頭に1つ足すだけでページが増える
+// （DB を使うようになったら、ここは DB が使えないときの予備になる）
 
 export type Reward = {
   name: string;
@@ -9,20 +10,49 @@ export type Reward = {
   amount: number;
 };
 
-export type EventData = {
+// ポイント到達型の報酬（◯ptためるともらえる）
+export type MilestoneReward = {
+  name: string;
+  requiredPoints: number; // もらえるポイント（累計）
+  image: string;
+  amount: number;
+};
+
+// どのイベントにもある項目
+type EventBase = {
   slug: string; // URLに使う名前（/point-calc/◯◯）
   name: string;
   category: string;
   start: string;
   end: string;
-  exchangeEnd: string;
+  unit?: string; // ポイントの単位（大討伐は「体」など）。書かなければ pt
+};
+
+// 画面に出すポイントの単位
+export const unitOf = (event: EventData) => event.unit ?? "pt";
+
+// イベントの形（報酬の画面テンプレートがこれで切り替わる。src/components/rewards/index.ts）
+// exchange：交換所型（ポイントで報酬を交換する）
+export type ExchangeEvent = EventBase & {
+  type: "exchange";
+  exchangeEnd: string; // 交換期限
   rewards: Reward[];
 };
+// milestone：ポイント到達型（ためたポイントで報酬がもらえる）
+export type MilestoneEvent = EventBase & {
+  type: "milestone";
+  rewardEnd?: string; // 報酬の受け取り期限（わかれば）
+  milestones: MilestoneReward[];
+};
+
+export type EventData = ExchangeEvent | MilestoneEvent;
+export type EventType = EventData["type"];
 
 export const events: EventData[] = [
   {
     slug: "jigoku-meguri-2026",
     name: "地獄めぐり",
+    type: "exchange",
     category: "シナリオイベント",
     start: "2026-11-04T18:00:00+09:00", // 開始：11/4 18:00
     end: "2026-11-18T13:00:00+09:00", // 終了：11/18 12:59まで（13:00ちょうどに終了）
@@ -59,15 +89,6 @@ export const events: EventData[] = [
   },
 ];
 
-// slug からイベントを探す（PHPの array_filter で1件取り出すイメージ）
-export function getEvent(slug: string) {
-  return events.find((event) => event.slug === slug);
-}
+// イベントを探す・一覧を取るのは src/lib/eventSource.ts（events.ts か DB かを切り替える）
 
-// いちばん新しいイベント（配列の先頭）
-export const latestEvent = events[0];
-
-// 「11/4」のような短い日付
-export function shortDate(iso: string) {
-  return `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
-}
+// 日時の書き方は src/lib/dateFormat.ts にまとめてある

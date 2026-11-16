@@ -1,4 +1,8 @@
 import type { LevelTableRow } from "@/lib/emakiLevel";
+import { renderCanvasPng, roundedRectPath, savePngImage } from "./imageSave";
+
+// 保存の仕組みは imageSave.ts に移した。今までの呼び出し元のために、ここからも使えるようにしておく
+export { canShareFiles, downloadBlob, isAppleTouchDevice } from "./imageSave";
 
 /** 画像のタイトル（ページ名） */
 export const TABLE_IMAGE_TITLE = "絵巻守Lv早見表";
@@ -83,19 +87,6 @@ export function tableImageFilename(highlightLevel?: number | null): string {
 }
 
 
-export function canShareFiles(files: File[]): boolean {
-  return typeof navigator !== "undefined"
-    && typeof navigator.canShare === "function"
-    && navigator.canShare({ files });
-}
-
-/** iPhone / iPad。保存時に download が効かないことがあるので共有シートを使う判定 */
-export function isAppleTouchDevice(): boolean {
-  if (typeof navigator === "undefined") return false;
-  return /iP(hone|ad|od)/.test(navigator.userAgent)
-    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
-
 export function getTableImageLayout(
   rowCount: number,
   columnCount: number = TABLE_IMAGE_COLUMNS,
@@ -148,24 +139,6 @@ export function getTableImageLayout(
 export function getTableImageSize(rowCount: number): { width: number; height: number } {
   const { width, height } = getTableImageLayout(rowCount);
   return { width, height };
-}
-
-function roundedRectPath(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-) {
-  const r = Math.min(radius, width / 2, height / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + width, y, x + width, y + height, r);
-  ctx.arcTo(x + width, y + height, x, y + height, r);
-  ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
-  ctx.closePath();
 }
 
 function formatInt(value: number): string {
@@ -362,59 +335,16 @@ function drawOneTable(
 
 export async function renderEmakiTablePngBlob(options: EmakiTableImageOptions): Promise<Blob> {
   const { width, height } = getTableImageSize(options.rows.length);
-  const scale = TABLE_IMAGE_SCALE;
-  const canvas = document.createElement("canvas");
-  canvas.width = width * scale;
-  canvas.height = height * scale;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error("画像を描く準備ができませんでした");
-  }
-  ctx.scale(scale, scale);
-  if (typeof document !== "undefined" && document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch {
-      // フォント待ちに失敗しても、端末の文字で描く
-    }
-  }
-  const fontFamily = options.fontFamily
-    ?? (typeof document !== "undefined" ? getComputedStyle(document.body).fontFamily : '"M PLUS Rounded 1c", sans-serif');
-  drawEmakiTableImage(ctx, { ...options, fontFamily });
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, "image/png");
-  });
-  if (!blob) {
-    throw new Error("画像を作れませんでした");
-  }
-  return blob;
-}
-
-export function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return renderCanvasPng(
+    width,
+    height,
+    TABLE_IMAGE_SCALE,
+    (ctx, fontFamily) => drawEmakiTableImage(ctx, { ...options, fontFamily }),
+    options.fontFamily,
+  );
 }
 
 /** iPhoneでは共有シートから保存。それ以外はファイルとして保存する */
 export async function savePngBlob(blob: Blob, filename: string): Promise<"shared" | "downloaded"> {
-  const file = new File([blob], filename, { type: "image/png" });
-  if (isAppleTouchDevice() && canShareFiles([file])) {
-    try {
-      await navigator.share({ files: [file], title: TABLE_IMAGE_TITLE });
-      return "shared";
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return "shared";
-      }
-    }
-  }
-  downloadBlob(blob, filename);
-  return "downloaded";
+  return savePngImage(blob, filename, TABLE_IMAGE_TITLE);
 }
-
