@@ -192,17 +192,15 @@ const params = new URLSearchParams({
   [template.paramName]: selection,
   days: days.map((day) => day.playable ? "1" : "0").join(""),
 });
-// 「結果をリンクに入れる」がオフのときは、イベントページのURLとタイトルだけを共有する
+// 結果の文章はいつも入れる。「結果をリンクに入れる」がオフのときは、リンクだけイベントページのURLにする
 const pageUrl = `${site.url}/point-calc/${event.slug}`;
 const shareUrl = includeResult ? `${pageUrl}?${params}#schedule` : pageUrl;
-const fullShareText = includeResult
-  ? `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`
-  : `ぱずぎりイベント【${event.name}】\n${shareUrl}`;
+const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n${includeResult ? "▼表で確認する" : "▼ノルマ計算ツール"}\n${shareUrl}`;
 
 //日ごとの予定を画像にして保存する（画面の予定表と同じ中身。サーバーには送らない）
 const startHour = Number(event.start.slice(11, 13));
 const endHour = Number(event.end.slice(11, 13));
-// 予定表の画像を作る（保存と「画像つきで共有」の両方で使う）
+// 予定表の画像を作る（「表を画像保存」で使う）
 const makeScheduleImage = () =>
   renderScheduleTablePngBlob({
       eventName: event.name,
@@ -238,15 +236,20 @@ const handleSaveScheduleImage = async () => {
   }
 };
 
-//「画像つきで共有」：スマホの共有メニューで、予定表の画像と共有テキスト（結果入りのリンク）を一緒に渡す
+//「画像つきで共有」：スマホの共有メニューで、結果のカード画像と共有テキストを一緒に渡す
+// カード画像は、結果入りのリンクを X や LINE に貼ったときに出るものと同じ（サーバーの share-image で作る）
 // 共有メニューで画像を渡せない端末（パソコンなど）では、画像を保存して、共有テキストをコピーする
+const resultCardFilename = `${event.slug}-result.png`;
 const handleShareImage = async () => {
   if (shareBusy) return;
   setShareBusy(true);
   setShareHint("");
   try {
-    const blob = await makeScheduleImage();
-    const file = new File([blob], scheduleImageFilename(event.slug), { type: "image/png" });
+    // 開いているサイト（本番・プレビュー・手元）の share-image から、今の結果のカード画像をもらう
+    const res = await fetch(`/point-calc/${event.slug}/share-image?${params}`);
+    if (!res.ok) throw new Error("カード画像を作れませんでした");
+    const blob = await res.blob();
+    const file = new File([blob], resultCardFilename, { type: "image/png" });
     if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file], text: fullShareText })) {
       try {
         await navigator.share({ files: [file], text: fullShareText });
@@ -257,7 +260,7 @@ const handleShareImage = async () => {
       }
       return;
     }
-    await saveScheduleImage(blob, scheduleImageFilename(event.slug));
+    await saveScheduleImage(blob, resultCardFilename);
     await navigator.clipboard?.writeText(fullShareText);
     setShareHint("画像を保存し、共有する文章をコピーしました。X や LINE に画像を付けて、文章を貼り付けてください。");
     sendGAEvent("event", "share", { method: "image_share_fallback" });
@@ -404,7 +407,7 @@ return (
 
       <section className="px-1 py-2">
         <h2 className="mb-3 text-center text-base font-extrabold">結果を共有</h2>
-        {/* オン：リンクを開くと同じ設定で開き、カードも結果入り。オフ：イベントページのリンクとタイトルだけ */}
+        {/* オン：リンクを開くと同じ設定で開き、カードも結果入り。オフ：結果の文章はそのまま、リンクはイベントページ */}
         <div className="mb-3 text-center">
           <label className="inline-flex cursor-pointer items-center justify-center gap-2 text-sm font-bold">
             <input
@@ -416,7 +419,7 @@ return (
             結果をリンクに入れる
           </label>
           <p className="text-xs text-notebook-muted">
-            {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "イベントページのリンクとタイトルだけを送ります"}
+            {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "結果の文章は送り、リンクはイベントページにします"}
           </p>
         </div>
         {/* 画像つきで共有（予定表の画像＋結果入りのリンク）。いちばん目立つボタン */}
@@ -433,7 +436,7 @@ return (
             {shareHint}
           </p>
         )}
-        <p className="mb-2 text-center text-xs text-notebook-muted">文章とリンクだけで共有</p>
+        <p className="mb-2 text-center text-xs text-notebook-muted">テキストで共有</p>
         <div className="grid grid-cols-2 gap-3">
           <a href={`https://line.me/R/share?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" onClick={() => sendGAEvent("event", "share", { method: "LINE" })} className="flex min-h-12 items-center justify-center rounded-xl bg-notebook-green px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">LINEで共有</a>
           <a href={`https://x.com/intent/post?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" onClick={() => sendGAEvent("event", "share", { method: "X" })} className="flex min-h-12 items-center justify-center rounded-xl bg-[#3d3b37] px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">Xで共有</a>
