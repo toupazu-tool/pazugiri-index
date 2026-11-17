@@ -49,6 +49,7 @@ const [imageBusy, setImageBusy] = useState(false); // 画像を作っている�
 const [imageHint, setImageHint] = useState(""); // 画像が作れなかったときのお知らせ
 const [shareBusy, setShareBusy] = useState(false); // 画像つき共有の準備中
 const [shareHint, setShareHint] = useState(""); // 画像つき共有のお知らせ
+const [includeResult, setIncludeResult] = useState(true); // 共有リンクに自分の結果を入れるか
 
 useEffect(() => {
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -191,8 +192,12 @@ const params = new URLSearchParams({
   [template.paramName]: selection,
   days: days.map((day) => day.playable ? "1" : "0").join(""),
 });
-const shareUrl = `${site.url}/point-calc/${event.slug}?${params}#schedule`;
-const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`;
+// 「結果をリンクに入れる」がオフのときは、イベントページのURLとタイトルだけを共有する
+const pageUrl = `${site.url}/point-calc/${event.slug}`;
+const shareUrl = includeResult ? `${pageUrl}?${params}#schedule` : pageUrl;
+const fullShareText = includeResult
+  ? `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`
+  : `ぱずぎりイベント【${event.name}】\n${shareUrl}`;
 
 //日ごとの予定を画像にして保存する（画面の予定表と同じ中身。サーバーには送らない）
 const startHour = Number(event.start.slice(11, 13));
@@ -399,6 +404,21 @@ return (
 
       <section className="px-1 py-2">
         <h2 className="mb-3 text-center text-base font-extrabold">結果を共有</h2>
+        {/* オン：リンクを開くと同じ設定で開き、カードも結果入り。オフ：イベントページのリンクとタイトルだけ */}
+        <label className="mb-3 flex cursor-pointer items-start justify-center gap-2 text-sm font-bold">
+          <input
+            type="checkbox"
+            checked={includeResult}
+            onChange={(e) => setIncludeResult(e.target.checked)}
+            className="mt-0.5 size-5 accent-notebook-red"
+          />
+          <span>
+            結果をリンクに入れる
+            <span className="block text-xs font-normal text-notebook-muted">
+              {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "イベントページのリンクとタイトルだけを送ります"}
+            </span>
+          </span>
+        </label>
         {/* 画像つきで共有（予定表の画像＋結果入りのリンク）。いちばん目立つボタン */}
         <button
           type="button"
