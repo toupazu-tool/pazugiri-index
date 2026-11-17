@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNow } from "@/lib/useNow";
 import Image from "next/image";
 import { calcDailyQuota, calcRemainingDays, calcSchedule } from "@/lib/quota";
+import { listEventDates } from "@/lib/sharedResult";
 import { rewardTemplates } from "@/components/rewards";
 import { renderScheduleTablePngBlob, saveScheduleImage, scheduleImageFilename } from "@/lib/scheduleTableImage";
 import { unitOf, type EventData } from "@/lib/events";
@@ -19,16 +20,6 @@ const categoryColors: Record<string, { label: string; frame: string }> = {
   シナリオイベント: { label: "bg-notebook-green text-white", frame: "border-notebook-green" },
   大討伐: { label: "bg-notebook-red text-white", frame: "border-notebook-red" },
 };
-
-function listEventDates(startIso: string, endIso: string): string[] {
-  const dates: string[] = [];
-  const start = new Date(`${startIso.slice(0, 10)}T12:00:00+09:00`);
-  const end = new Date(`${endIso.slice(0, 10)}T12:00:00+09:00`);
-  for (let time = start.getTime(); time <= end.getTime(); time += 24 * 60 * 60 * 1000) {
-    dates.push(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(new Date(time)));
-  }
-  return dates;
-}
 
 // 日本時間の日付を「2026-11-13」の形で出す（PHPの date('Y-m-d') に近い）
 const toTokyoDate = (date: Date) =>
@@ -56,6 +47,9 @@ const now = useNow();
 const today = now ? toTokyoDate(now) : "";
 const [imageBusy, setImageBusy] = useState(false); // 画像を作っている途中
 const [imageHint, setImageHint] = useState(""); // 画像が作れなかったときのお知らせ
+const [shareBusy, setShareBusy] = useState(false); // 画像つき共有の準備中
+const [shareHint, setShareHint] = useState(""); // 画像つき共有のお知らせ
+const [includeResult, setIncludeResult] = useState(true); // 共有リンクに自分の結果を入れるか
 
 useEffect(() => {
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -198,18 +192,17 @@ const params = new URLSearchParams({
   [template.paramName]: selection,
   days: days.map((day) => day.playable ? "1" : "0").join(""),
 });
-const shareUrl = `${site.url}/point-calc/${event.slug}?${params}#schedule`;
-const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n▼表で確認する\n${shareUrl}`;
+// 結果の文章はいつも入れる。「結果をリンクに入れる」がオフのときは、リンクだけイベントページのURLにする
+const pageUrl = `${site.url}/point-calc/${event.slug}`;
+const shareUrl = includeResult ? `${pageUrl}?${params}#schedule` : pageUrl;
+const fullShareText = `ぱずぎりイベント【${event.name}】\n${shareText}\n${includeResult ? "▼表で確認する" : "▼ノルマ計算ツール"}\n${shareUrl}`;
 
 //日ごとの予定を画像にして保存する（画面の予定表と同じ中身。サーバーには送らない）
 const startHour = Number(event.start.slice(11, 13));
 const endHour = Number(event.end.slice(11, 13));
-const handleSaveScheduleImage = async () => {
-  if (imageBusy) return;
-  setImageBusy(true);
-  setImageHint("");
-  try {
-    const blob = await renderScheduleTablePngBlob({
+// 予定表の画像を作る（「表を画像保存」で使う）
+const makeScheduleImage = () =>
+  renderScheduleTablePngBlob({
       eventName: event.name,
       quota: dailyQuota === 0 ? "達成済み" : `${dailyQuota.toLocaleString()}${unit}`,
       goal: rewardTarget.goalLabel,
@@ -227,12 +220,57 @@ const handleSaveScheduleImage = async () => {
         highlight: day.date === today,
       })),
     });
+
+const handleSaveScheduleImage = async () => {
+  if (imageBusy) return;
+  setImageBusy(true);
+  setImageHint("");
+  try {
+    const blob = await makeScheduleImage();
     await saveScheduleImage(blob, scheduleImageFilename(event.slug));
     sendGAEvent("event", "share", { method: "image_save" });
   } catch {
     setImageHint("画像を作れませんでした。もう一度試してみてください。");
   } finally {
     setImageBusy(false);
+  }
+};
+
+//「画像つきで共有」：スマホの共有メニューで、結果のカード画像と共有テキストを一緒に渡す
+// カード画像は、結果入りのリンクを X や LINE に貼ったときに出るものと同じ（サーバーの share-image で作る）
+// 共有メニューで画像を渡せない端末（パソコンなど）では、画像を保存して、共有テキストをコピーする
+const resultCardFilename = `${event.slug}-result.png`;
+// 画像つきで共有するときの文章。結果は画像に入っているので、チェックを外したときはタイトルとリンクだけにする
+const imageShareText = includeResult ? fullShareText : `ぱずぎりイベント【${event.name}】
+${shareUrl}`;
+const handleShareImage = async () => {
+  if (shareBusy) return;
+  setShareBusy(true);
+  setShareHint("");
+  try {
+    // 開いているサイト（本番・プレビュー・手元）の share-image から、今の結果のカード画像をもらう
+    const res = await fetch(`/point-calc/${event.slug}/share-image?${params}`);
+    if (!res.ok) throw new Error("カード画像を作れませんでした");
+    const blob = await res.blob();
+    const file = new File([blob], resultCardFilename, { type: "image/png" });
+    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file], text: imageShareText })) {
+      try {
+        await navigator.share({ files: [file], text: imageShareText });
+        sendGAEvent("event", "share", { method: "image_share" });
+      } catch (error) {
+        // 共有メニューを閉じただけ（AbortError）なら何もしない
+        if (!(error instanceof Error && error.name === "AbortError")) throw error;
+      }
+      return;
+    }
+    await saveScheduleImage(blob, resultCardFilename);
+    await navigator.clipboard?.writeText(imageShareText);
+    setShareHint("画像を保存し、共有する文章をコピーしました。X や LINE に画像を付けて、文章を貼り付けてください。");
+    sendGAEvent("event", "share", { method: "image_share_fallback" });
+  } catch {
+    setShareHint("共有できませんでした。もう一度試すか、下のボタンで文章だけ共有してください。");
+  } finally {
+    setShareBusy(false);
   }
 };
 
@@ -372,6 +410,36 @@ return (
 
       <section className="px-1 py-2">
         <h2 className="mb-3 text-center text-base font-extrabold">結果を共有</h2>
+        {/* オン：リンクを開くと同じ設定で開き、カードも結果入り。オフ：結果の文章はそのまま、リンクはイベントページ */}
+        <div className="mb-3 text-center">
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={includeResult}
+              onChange={(e) => setIncludeResult(e.target.checked)}
+              className="size-5 accent-notebook-red"
+            />
+            結果をリンクに入れる
+          </label>
+          <p className="text-xs text-notebook-muted">
+            {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "リンクを開くとリセットされた計算ツールが開きます"}
+          </p>
+        </div>
+        {/* 画像つきで共有（予定表の画像＋結果入りのリンク）。いちばん目立つボタン */}
+        <button
+          type="button"
+          onClick={() => { void handleShareImage(); }}
+          disabled={shareBusy}
+          className="mb-3 flex min-h-14 w-full flex-col items-center justify-center rounded-xl bg-notebook-red px-3 text-base font-extrabold text-white shadow-md hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-60"
+        >
+          {shareBusy ? "画像を作っています…" : "画像つきで共有"}
+        </button>
+        {shareHint && (
+          <p role="status" className="mb-3 rounded-sm border border-brand-yellow bg-[#fff6d9] px-3 py-2 text-center text-xs font-bold text-[#7a5a00]">
+            {shareHint}
+          </p>
+        )}
+        <p className="mb-2 text-center text-xs text-notebook-muted">テキストで共有</p>
         <div className="grid grid-cols-2 gap-3">
           <a href={`https://line.me/R/share?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" onClick={() => sendGAEvent("event", "share", { method: "LINE" })} className="flex min-h-12 items-center justify-center rounded-xl bg-notebook-green px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">LINEで共有</a>
           <a href={`https://x.com/intent/post?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" onClick={() => sendGAEvent("event", "share", { method: "X" })} className="flex min-h-12 items-center justify-center rounded-xl bg-[#3d3b37] px-3 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">Xで共有</a>

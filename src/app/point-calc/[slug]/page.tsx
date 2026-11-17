@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { PointCalc } from "@/components/PointCalc";
 import { getEventBySlug, getEvents } from "@/lib/eventSource";
+import { OG_IMAGE_SIZE } from "@/lib/ogImage";
+import { sharedQuery } from "@/lib/sharedResult";
 import { pageMeta, site, tool, toolTitle } from "@/lib/site";
 
 // [slug] はURLの一部を変数として受け取るフォルダ名
@@ -13,11 +16,31 @@ export async function generateStaticParams() {
 }
 
 // イベントごとの title や説明文
-export async function generateMetadata({ params }: PageProps<"/point-calc/[slug]">) {
+// 共有URL（結果入り）で開かれたときは、共有カードをその人の結果入りの画像にする（X や LINE に貼ったとき用）
+export async function generateMetadata({ params, searchParams }: PageProps<"/point-calc/[slug]">) {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
   if (!event) return {};
-  return pageMeta(toolTitle(event.name), tool.description, `/point-calc/${event.slug}`);
+  const meta = pageMeta(toolTitle(event.name), tool.description, `/point-calc/${event.slug}`);
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (typeof value === "string") query.set(key, value);
+  }
+  const shared = sharedQuery(event, query);
+  if (!shared) return meta; // 普通のURLは今までどおり、イベントページ共通のカード（opengraph-image）
+  const image = { url: `/point-calc/${event.slug}/share-image?${shared}`, ...OG_IMAGE_SIZE, alt: `${event.name}のノルマ` };
+  return {
+    ...meta,
+    openGraph: { ...meta.openGraph, images: [image] },
+    twitter: { card: "summary_large_image" as const, images: [image.url] },
+  };
+}
+
+// 上の generateMetadata は URL のパラメータ（開いた人ごとに違う）を読むので、
+// 「ここは開いたときに作る部分がある」と Next.js に知らせる目印（ページの本体は前もって作ったまま）
+async function Connection() {
+  await connection();
+  return null;
 }
 
 // params（URLのイベント名）は、この中で初めて読む。
@@ -62,6 +85,9 @@ export default function PointCalcPage({ params }: PageProps<"/point-calc/[slug]"
       }
     >
       <PointCalcForSlug params={params} />
+      <Suspense>
+        <Connection />
+      </Suspense>
     </Suspense>
   );
 }

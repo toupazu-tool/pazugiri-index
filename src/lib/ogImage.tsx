@@ -111,6 +111,48 @@ export async function createSiteOgImage(options: Omit<SiteOgImage, "kind">) {
   );
 }
 
+/** ノルマの結果入りの共有カード（共有URLを X や LINE に貼ったときに出る） */
+export async function createResultOgImage(r: {
+  eventName: string;
+  unit: string;
+  dailyQuota: number;
+  rest: number;
+  remainingDays: number;
+  goal?: string;
+}) {
+  const footer = `${site.name}・イベントノルマ計算ツール`;
+  const quota = r.dailyQuota === 0 ? "達成済み！" : r.dailyQuota.toLocaleString("ja-JP");
+  const rest = r.rest.toLocaleString("ja-JP");
+  const goal = r.goal ? `目標：${r.goal}` : "";
+  const text = `ぱずぎりイベント【${r.eventName}】1日の目安${quota}${r.unit}残り${rest}選んだ日数${r.remainingDays}日${goal}${footer}0123456789,.`;
+  const { logo, font } = await loadLogoAndFont(text);
+
+  return new ImageResponse(
+    (
+      <Frame footer={footer}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <LogoBadge logo={logo} size={96} img={64} />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 30, color: "#4a8520" }}>ぱずぎりイベント</div>
+            <div style={{ fontSize: 52, lineHeight: 1.2 }}>{`【${r.eventName}】`}</div>
+          </div>
+        </div>
+        {goal ? <div style={{ marginTop: 18, fontSize: 30, display: "flex" }}>{goal}</div> : null}
+        <div style={{ marginTop: 18, fontSize: 34, display: "flex" }}>1日の目安</div>
+        <div style={{ display: "flex", alignItems: "baseline", color: "#b65344" }}>
+          <div style={{ fontSize: 120, lineHeight: 1.1 }}>{quota}</div>
+          {r.dailyQuota === 0 ? null : <div style={{ fontSize: 56, marginLeft: 8 }}>{r.unit}</div>}
+        </div>
+        <div style={{ marginTop: 10, fontSize: 32, display: "flex", gap: 40, color: "#8a7350" }}>
+          <div style={{ display: "flex" }}>{`残り${rest}${r.unit}`}</div>
+          <div style={{ display: "flex" }}>{`選んだ日数${r.remainingDays}日`}</div>
+        </div>
+      </Frame>
+    ),
+    { ...OG_IMAGE_SIZE, fonts: [{ name: "Rounded", data: font, weight: 800, style: "normal" }] },
+  );
+}
+
 /** 各ツールページ用。小さな「ぱずぎり」＋大きなツール名 */
 export async function createToolOgImage(options: Omit<ToolOgImage, "kind">) {
   const kicker = options.kicker ?? "ぱずぎり";
