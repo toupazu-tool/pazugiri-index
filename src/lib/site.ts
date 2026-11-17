@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 
+// Vercel が自動で入れる「どの環境か」「このブランチのURL」を見る（本番や手元では使わない）
+function previewUrl(): string | undefined {
+  const branchUrl = process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL;
+  return process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" && branchUrl ? `https://${branchUrl}` : undefined;
+}
+
 // サイト全体で使う共通の情報（PHPの config.php のようなもの）
 export const site = {
   name: "ぱずぎり目録",
   tagline: "刀剣乱舞ぱずぎり非公式ファンサイト",
   description: "刀剣乱舞ぱずぎりの非公式ファンサイトです。ツールなど、楽しく遊ぶためのコンテンツをまとめています。",
   // 独自ドメイン。環境変数があればそちらを優先する
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.pazugiri-index.com",
+  // Vercel のプレビュー公開（main 以外のブランチ）では、そのプレビューの URL を使う
+  // （共有リンクや共有カード画像が、本番ではなくプレビューを指すように。テストのため）
+  url: previewUrl() ?? process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.pazugiri-index.com",
   // Googleアナリティクスの測定ID（公開されても問題ないID）
   gaId: "G-81QCC06BVD",
   // お問い合わせ用のメールアドレス（フォームができるまで）
