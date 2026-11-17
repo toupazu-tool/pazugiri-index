@@ -240,6 +240,9 @@ const handleSaveScheduleImage = async () => {
 // カード画像は、結果入りのリンクを X や LINE に貼ったときに出るものと同じ（サーバーの share-image で作る）
 // 共有メニューで画像を渡せない端末（パソコンなど）では、画像を保存して、共有テキストをコピーする
 const resultCardFilename = `${event.slug}-result.png`;
+// 画像つきで共有するときの文章。結果は画像に入っているので、チェックを外したときはタイトルとリンクだけにする
+const imageShareText = includeResult ? fullShareText : `ぱずぎりイベント【${event.name}】
+${shareUrl}`;
 const handleShareImage = async () => {
   if (shareBusy) return;
   setShareBusy(true);
@@ -250,9 +253,9 @@ const handleShareImage = async () => {
     if (!res.ok) throw new Error("カード画像を作れませんでした");
     const blob = await res.blob();
     const file = new File([blob], resultCardFilename, { type: "image/png" });
-    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file], text: fullShareText })) {
+    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file], text: imageShareText })) {
       try {
-        await navigator.share({ files: [file], text: fullShareText });
+        await navigator.share({ files: [file], text: imageShareText });
         sendGAEvent("event", "share", { method: "image_share" });
       } catch (error) {
         // 共有メニューを閉じただけ（AbortError）なら何もしない
@@ -261,7 +264,7 @@ const handleShareImage = async () => {
       return;
     }
     await saveScheduleImage(blob, resultCardFilename);
-    await navigator.clipboard?.writeText(fullShareText);
+    await navigator.clipboard?.writeText(imageShareText);
     setShareHint("画像を保存し、共有する文章をコピーしました。X や LINE に画像を付けて、文章を貼り付けてください。");
     sendGAEvent("event", "share", { method: "image_share_fallback" });
   } catch {
@@ -419,7 +422,7 @@ return (
             結果をリンクに入れる
           </label>
           <p className="text-xs text-notebook-muted">
-            {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "結果の文章は送り、リンクはイベントページにします"}
+            {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "リンクを開くとリセットされた計算ツールが開きます"}
           </p>
         </div>
         {/* 画像つきで共有（予定表の画像＋結果入りのリンク）。いちばん目立つボタン */}
