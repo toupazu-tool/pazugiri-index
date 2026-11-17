@@ -427,7 +427,6 @@ return (
           className="mb-3 flex min-h-14 w-full flex-col items-center justify-center rounded-xl bg-notebook-red px-3 text-base font-extrabold text-white shadow-md hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-60"
         >
           {shareBusy ? "画像を作っています…" : "画像つきで共有"}
-          <span className="text-xs font-bold text-white/90">予定表の画像と、結果のリンクを一緒に送れます</span>
         </button>
         {shareHint && (
           <p role="status" className="mb-3 rounded-sm border border-brand-yellow bg-[#fff6d9] px-3 py-2 text-center text-xs font-bold text-[#7a5a00]">
