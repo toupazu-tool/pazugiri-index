@@ -405,20 +405,20 @@ return (
       <section className="px-1 py-2">
         <h2 className="mb-3 text-center text-base font-extrabold">結果を共有</h2>
         {/* オン：リンクを開くと同じ設定で開き、カードも結果入り。オフ：イベントページのリンクとタイトルだけ */}
-        <label className="mb-3 flex cursor-pointer items-start justify-center gap-2 text-sm font-bold">
-          <input
-            type="checkbox"
-            checked={includeResult}
-            onChange={(e) => setIncludeResult(e.target.checked)}
-            className="mt-0.5 size-5 accent-notebook-red"
-          />
-          <span>
+        <div className="mb-3 text-center">
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={includeResult}
+              onChange={(e) => setIncludeResult(e.target.checked)}
+              className="size-5 accent-notebook-red"
+            />
             結果をリンクに入れる
-            <span className="block text-xs font-normal text-notebook-muted">
-              {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "イベントページのリンクとタイトルだけを送ります"}
-            </span>
-          </span>
-        </label>
+          </label>
+          <p className="text-xs text-notebook-muted">
+            {includeResult ? "リンクを開くと同じ設定で計算ツールが開きます" : "イベントページのリンクとタイトルだけを送ります"}
+          </p>
+        </div>
         {/* 画像つきで共有（予定表の画像＋結果入りのリンク）。いちばん目立つボタン */}
         <button
           type="button"
