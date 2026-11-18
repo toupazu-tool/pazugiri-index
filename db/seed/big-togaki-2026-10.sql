@@ -3,23 +3,23 @@
 -- 何度流しても同じ結果になる（すでにあれば上書き）
 begin;
 insert into items (name, kind, icon_url) values
-  ('小判', 'koban', null),
-  ('宝玉', 'other', '/rewards/gem.png'),
-  ('【絵馬】一寸の大冒険', 'other', '/rewards/ema-issun-no-daibouken.png'),
-  ('お花', 'material', '/rewards/flower.png'),
-  ('紙', 'material', null),
-  ('筆', 'material', null),
-  ('絵馬経験値の勾玉・小', 'material', null),
-  ('サイコロ', 'material', '/rewards/dice.png'),
-  ('鉄', 'material', '/rewards/iron.png'),
-  ('サンゴ', 'material', null),
-  ('経験値の書・小', 'material', null),
-  ('ウロコ', 'material', null),
-  ('【刀剣男士】陸奥守吉行(勇気百寸)', 'sword', '/rewards/mutsunokami-yoshiyuki-yuki-hyakusun.png'),
-  ('陸奥守吉行(勇気百寸)の強化片', 'material', '/rewards/mutsunokami-yoshiyuki-yuki-hyakusun-shard.png'),
-  ('絵馬Pt', 'other', null),
-  ('青の絵具', 'material', '/rewards/blue-paint.png')
-on conflict (name) do update set kind = excluded.kind, icon_url = coalesce(items.icon_url, excluded.icon_url);
+  ('小判', 'koban', '/rewards/icons/koban.svg'),
+  ('宝玉', 'other', '/rewards/icons/gem.svg'),
+  ('【絵馬】一寸の大冒険', 'other', '/rewards/icons/ema-issun.svg'),
+  ('お花', 'material', '/rewards/icons/flower.svg'),
+  ('紙', 'material', '/rewards/icons/paper.svg'),
+  ('筆', 'material', '/rewards/icons/brush.svg'),
+  ('絵馬経験値の勾玉・小', 'material', '/rewards/icons/magatama.svg'),
+  ('サイコロ', 'material', '/rewards/icons/dice.svg'),
+  ('鉄', 'material', '/rewards/icons/iron.svg'),
+  ('サンゴ', 'material', '/rewards/icons/coral.svg'),
+  ('経験値の書・小', 'material', '/rewards/icons/exp-book-small.svg'),
+  ('ウロコ', 'material', '/rewards/icons/scale.svg'),
+  ('【刀剣男士】陸奥守吉行(勇気百寸)', 'sword', '/rewards/icons/sword.svg'),
+  ('陸奥守吉行(勇気百寸)の強化片', 'material', '/rewards/icons/shard.svg'),
+  ('絵馬Pt', 'other', '/rewards/icons/ema-points.svg'),
+  ('青の絵具', 'material', '/rewards/icons/blue-paint.svg')
+on conflict (name) do update set kind = excluded.kind, icon_url = coalesce(excluded.icon_url, items.icon_url);
 
 insert into events (slug, name, event_type, category, start_at, end_at, reward_end_at, point_unit, status, source_url)
 values ('big-togaki-2026-10', 'BIGト餓鬼討伐大作戦！（2026年10月）', 'milestone', '大討伐', '2026-10-14T18:00:00+09:00', '2026-11-04T13:00:00+09:00', '2026-11-11T13:00:00+09:00', '体', 'published', null)

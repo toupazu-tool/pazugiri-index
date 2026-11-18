@@ -51,7 +51,7 @@ function ExchangeRewards({ event, value, onChange, exchangeText }: RewardTemplat
             >
               {/* アイコン */}
               <div className="relative shrink-0">
-                <Image src={reward.image} alt="" width={64} height={64} className="size-14 sm:size-20" />
+                <Image src={reward.image} alt="" width={64} height={64} className="size-14 sm:size-20" unoptimized={reward.image.endsWith(".svg")} />
                 {reward.amount > 1 && (
                   <span className="absolute -bottom-1 -right-2 text-lg font-extrabold text-[#5a4630] [text-shadow:0_0_2px_#fff,0_0_2px_#fff,0_0_2px_#fff]">
                     {reward.amount}
