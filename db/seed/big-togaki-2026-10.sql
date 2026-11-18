@@ -22,7 +22,7 @@ insert into items (name, kind, icon_url) values
 on conflict (name) do update set kind = excluded.kind, icon_url = coalesce(items.icon_url, excluded.icon_url);
 
 insert into events (slug, name, event_type, category, start_at, end_at, reward_end_at, point_unit, status, source_url)
-values ('big-togaki-2026-10', 'BIGト餓鬼討伐大作戦', 'milestone', '大討伐', '2026-10-14T18:00:00+09:00', '2026-11-04T13:00:00+09:00', '2026-11-11T13:00:00+09:00', '体', 'published', null)
+values ('big-togaki-2026-10', 'BIGト餓鬼討伐大作戦！（2026年10月）', 'milestone', '大討伐', '2026-10-14T18:00:00+09:00', '2026-11-04T13:00:00+09:00', '2026-11-11T13:00:00+09:00', '体', 'published', null)
 on conflict (slug) do update set name = excluded.name, event_type = excluded.event_type, category = excluded.category, start_at = excluded.start_at, end_at = excluded.end_at, reward_end_at = excluded.reward_end_at, point_unit = excluded.point_unit, status = excluded.status;
 
 delete from event_rewards where event_id = (select id from events where slug = 'big-togaki-2026-10');
