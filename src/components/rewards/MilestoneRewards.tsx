@@ -62,7 +62,13 @@ function MilestoneRewards({ event, value, onChange, currentPoints }: RewardTempl
                 <span className="min-w-0 flex-1">
                   <span className="block text-base font-bold leading-snug">{m.name}</span>
                   <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-notebook-line bg-notebook-paper px-3 text-base font-extrabold">
-                    <span aria-hidden="true" className="grid size-5 place-items-center rounded-full bg-brand-yellow text-xs text-white">P</span>
+                    {/* ポイント制（pt）なら黄色い P、討伐数（体など）ならサイトのアイコン（赤いト餓鬼） */}
+                    {unit === "pt" ? (
+                      <span aria-hidden="true" className="grid size-5 place-items-center rounded-full bg-brand-yellow text-xs text-white">P</span>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/icon.svg" alt="" aria-hidden="true" className="size-5" />
+                    )}
                     {m.requiredPoints.toLocaleString()}
                   </span>
                 </span>
