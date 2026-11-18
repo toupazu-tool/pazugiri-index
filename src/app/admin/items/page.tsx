@@ -26,7 +26,7 @@ async function Items({ searchParams }: Pick<PageProps<"/admin/items">, "searchPa
         <input type="hidden" name="back_to" value="/admin/items" />
         <label className="w-56 text-xs font-bold">名前<input name="name" required className={inputClass} /></label>
         <label className="w-32 text-xs font-bold">種類<KindSelect /></label>
-        <label className="w-64 text-xs font-bold">画像<input name="icon_url" placeholder="/rewards/◯◯.png" className={inputClass} /></label>
+        <label className="w-64 text-xs font-bold">画像<input name="icon_url" placeholder="/rewards/icons/◯◯.svg" className={inputClass} /></label>
         <button className={buttonClass}>素材を足す</button>
       </form>
 
@@ -38,7 +38,7 @@ async function Items({ searchParams }: Pick<PageProps<"/admin/items">, "searchPa
             {item.icon_url ? <img src={item.icon_url} alt="" className="size-8" /> : <span className="grid size-8 place-items-center rounded-full bg-notebook-beige text-[10px]">なし</span>}
             <input name="name" defaultValue={item.name} required className={`${inputClass} w-56`} />
             <div className="w-28"><KindSelect value={item.kind} /></div>
-            <input name="icon_url" defaultValue={item.icon_url ?? ""} placeholder="/rewards/◯◯.png" className={`${inputClass} w-64`} />
+            <input name="icon_url" defaultValue={item.icon_url ?? ""} placeholder="/rewards/icons/◯◯.svg" className={`${inputClass} w-64`} />
             <label className="flex items-center gap-1 text-xs"><input type="checkbox" name="is_active" defaultChecked={item.is_active} />使う</label>
             <button className={subButtonClass}>直す</button>
           </form>
