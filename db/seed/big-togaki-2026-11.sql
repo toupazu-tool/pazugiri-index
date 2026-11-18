@@ -6,7 +6,7 @@ begin;
 insert into items (name, kind, icon_url) values
   ('小判', 'koban', '/rewards/icons/koban.svg'),
   ('宝玉', 'other', '/rewards/icons/gem.svg'),
-  ('【絵馬】乙姫の玉手箱', 'other', '/rewards/icons/ema-otohime.svg'),
+  ('【絵馬】乙姫の玉手箱', 'other', '/rewards/icons/ema-issun.svg'),
   ('お花', 'material', '/rewards/icons/flower.svg'),
   ('手旗', 'material', '/rewards/icons/hand-flag.svg'),
   ('鬼のツノ', 'material', '/rewards/icons/oni-horn.svg'),
