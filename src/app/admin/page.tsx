@@ -15,7 +15,6 @@ async function EventList({ searchParams }: Pick<PageProps<"/admin">, "searchPara
         <h1 className="text-lg font-extrabold">イベント</h1>
         <div className="flex items-center gap-3">
           <span className="text-xs text-notebook-muted">ログイン中：{admin}</span>
-          <form action="/api/admin/auth/logout" method="post"><button className="text-xs underline">ログアウト</button></form>
           <Link href="/admin/events/new" className={buttonClass}>＋ 新しいイベント</Link>
         </div>
       </div>
