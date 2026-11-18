@@ -51,7 +51,7 @@ function MilestoneRewards({ event, value, onChange, currentPoints }: RewardTempl
               >
                 {/* アイコン */}
                 <span className="relative shrink-0">
-                  <Image src={m.image} alt="" width={64} height={64} className="size-12 sm:size-14" />
+                  <Image src={m.image} alt="" width={64} height={64} className="size-12 sm:size-14" unoptimized={m.image.endsWith(".svg")} />
                   {m.amount > 1 && (
                     <span className="absolute -bottom-1 -right-2 text-base font-extrabold text-[#5a4630] [text-shadow:0_0_2px_#fff,0_0_2px_#fff,0_0_2px_#fff]">
                       {m.amount}

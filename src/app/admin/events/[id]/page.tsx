@@ -100,7 +100,7 @@ async function EditEvent({ params, searchParams }: PageProps<"/admin/events/[id]
                       <div className="w-24 shrink-0 px-2 py-1"><input name="quantity" type="number" min={1} defaultValue={r.quantity} className={inputClass} /></div>
                       <div className="w-28 shrink-0 px-2 py-1"><input name="points" type="number" min={0} required defaultValue={(isExchange ? r.cost_points : r.required_points) ?? ""} className={inputClass} /></div>
                       {isExchange && <div className="w-20 shrink-0 px-2 py-1"><input name="max_count" type="number" min={0} defaultValue={r.max_count ?? ""} className={inputClass} /></div>}
-                      <div className="flex-1 px-2 py-1"><input name="icon_url" defaultValue={r.icon_url ?? ""} placeholder="/rewards/◯◯.png" className={inputClass} /></div>
+                      <div className="flex-1 px-2 py-1"><input name="icon_url" defaultValue={r.icon_url ?? ""} placeholder="/rewards/icons/◯◯.svg" className={inputClass} /></div>
                       <div className="flex w-36 shrink-0 gap-1 px-2 py-1">
                         <button className={subButtonClass}>直す</button>
                         <button formAction={deleteReward} className={dangerButtonClass}>消す</button>
@@ -120,7 +120,7 @@ async function EditEvent({ params, searchParams }: PageProps<"/admin/events/[id]
           <label className="w-24 text-xs font-bold">数<input name="quantity" type="number" min={1} defaultValue={1} className={inputClass} /></label>
           <label className="w-28 text-xs font-bold">{pointsLabel}<input name="points" type="number" min={0} required className={inputClass} /></label>
           {isExchange && <label className="w-20 text-xs font-bold">上限<input name="max_count" type="number" min={0} className={inputClass} /></label>}
-          <label className="w-48 text-xs font-bold">画像（任意）<input name="icon_url" placeholder="/rewards/◯◯.png" className={inputClass} /></label>
+          <label className="w-48 text-xs font-bold">画像（任意）<input name="icon_url" placeholder="/rewards/icons/◯◯.svg" className={inputClass} /></label>
           <label className="w-20 text-xs font-bold">並び順<input name="sort_order" type="number" placeholder="最後" className={inputClass} /></label>
           <button className={buttonClass}>足す</button>
         </form>
